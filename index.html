@@ -1,0 +1,1710 @@
+<!doctype html><html lang="sr-Latn-ME"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Gusinjska kocka</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Marcellus&display=swap">
+<style>
+/* Layout: a full-screen 3D stage. The HUD floats over it; menus are cards anchored
+   low so the cube and the Prokletije ridges stay visible above them.
+   One deliberate daylight look for both host themes. */
+:root {
+  --mist: #e3eae5;
+  --ink: #1a2928;
+  --ink-2: #4b5d5b;
+  --panel: rgba(246, 248, 245, 0.9);
+  --panel-solid: #f5f7f4;
+  --line: rgba(26, 41, 40, 0.14);
+  --accent: #0b7b77;
+  --accent-ink: #ffffff;
+  --gold: #c08a1c;
+  --stele: #e8ebe5;
+  --display: 'Marcellus', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --ui: 'Golos Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; background: var(--mist); color: var(--ink); font-family: var(--ui); -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#stage { position: fixed; inset: 0; overflow: hidden; user-select: none; -webkit-user-select: none; }
+#bg, #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#gl { touch-action: none; cursor: grab; }
+#gl:active { cursor: grabbing; }
+
+/* ---------- HUD ---------- */
+.hud {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 8px; pointer-events: none;
+}
+.hud > * { pointer-events: auto; }
+.bar { display: flex; align-items: center; gap: 10px; }
+.lvl { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; font-family: var(--display); font-size: 1.45rem; line-height: 1.1; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
+.lvl > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lvl-num { flex: none; display: grid; place-items: center; width: 30px; height: 34px; border-radius: 15px 15px 5px 5px; background: var(--stele); border: 1px solid var(--line); font-size: 1.05rem; }
+.time { flex: none; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.95rem; background: var(--panel); border: 1px solid var(--line); padding: 7px 12px; border-radius: 999px; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px 5px 7px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 0.8rem; font-weight: 500; }
+.chip-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--accent); box-sizing: border-box; }
+.chip.is-done { color: var(--ink-2); }
+.chip.is-done .chip-dot { background: var(--gold); border-color: var(--gold); }
+
+.ibtn {
+  width: 46px; height: 46px; flex: none; display: grid; place-items: center; padding: 0; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 50%;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 4px 14px rgba(26, 41, 40, 0.12);
+}
+.ibtn svg { width: 22px; height: 22px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ibtn:active { transform: translateY(1px); }
+.ibtn .off { display: none; }
+.ibtn.is-muted .on { display: none; }
+.ibtn.is-muted .off { display: inline; }
+
+.controls {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; align-items: center; justify-content: center; gap: 10px; pointer-events: none;
+}
+.controls > * { pointer-events: auto; }
+.controls .gap { flex: 0 1 18px; }
+.pill {
+  height: 46px; padding: 0 20px; cursor: pointer; font-weight: 600; font-size: 0.95rem; color: var(--accent);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 4px 14px rgba(26, 41, 40, 0.12);
+}
+
+/* ---------- toast and hint ---------- */
+.toast {
+  position: absolute; left: 50%; top: var(--hud-bottom, calc(env(safe-area-inset-top, 0px) + 104px));
+  width: min(340px, calc(100% - 32px)); transform: translateX(-50%);
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px 13px;
+  box-shadow: 0 10px 30px rgba(26, 41, 40, 0.18); pointer-events: none; display: grid; gap: 3px;
+}
+.toast.is-in { animation: toast-in 0.32s cubic-bezier(.2, .9, .3, 1.2); }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, -10px) scale(0.97); } }
+.toast-meta { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.toast-name { font-family: var(--display); font-size: 1.25rem; line-height: 1.15; }
+.toast-text { font-size: 0.82rem; color: var(--ink-2); line-height: 1.4; }
+
+.hint {
+  position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); transform: translateX(-50%);
+  width: min(330px, calc(100% - 32px)); display: grid; grid-template-columns: 54px 1fr; gap: 12px; align-items: center;
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; pointer-events: none;
+  box-shadow: 0 10px 30px rgba(26, 41, 40, 0.16);
+}
+.hint p { margin: 0; font-size: 0.86rem; line-height: 1.4; }
+.hint p + p { color: var(--ink-2); margin-top: 3px; }
+.finger { position: relative; width: 54px; height: 54px; border-radius: 12px; background: var(--stele); overflow: hidden; }
+.finger::before { content: ""; position: absolute; left: 11px; top: 11px; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgba(11, 123, 119, 0.2); animation: swipe 1.8s ease-in-out infinite; }
+@keyframes swipe { 0%, 15% { transform: translate(0, 0); } 55%, 70% { transform: translate(16px, 16px); } 100% { transform: translate(0, 0); } }
+
+/* ---------- menus ---------- */
+.screen {
+  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.card {
+  pointer-events: auto; position: relative; width: 100%; max-width: 440px; margin: 0 auto; box-sizing: border-box;
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 20px; padding: 20px 20px 18px;
+  box-shadow: 0 18px 50px rgba(26, 41, 40, 0.22); display: grid; gap: 14px;
+  max-height: calc(100% - 8px); overflow-y: auto;
+}
+.eyebrow { margin: 0; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.card h1, .card h2 { margin: 0; font-family: var(--display); font-weight: 400; line-height: 1.02; text-wrap: balance; }
+.card h1 { font-size: clamp(2.2rem, 10vw, 2.8rem); letter-spacing: 0.005em; }
+.card h2 { font-size: 2.4rem; }
+.head { display: grid; gap: 6px; }
+.tagline { margin: 0; font-size: 0.98rem; line-height: 1.45; color: var(--ink-2); max-width: 34ch; }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lang { flex: none; display: flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.lang button { border: 0; background: transparent; padding: 6px 11px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; cursor: pointer; color: var(--ink-2); }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--panel-solid); }
+
+.levels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tablet {
+  display: grid; justify-items: center; gap: 2px; padding: 12px 6px 10px; cursor: pointer; min-width: 0;
+  background: linear-gradient(180deg, #f1f3ee, var(--stele)); border: 1px solid var(--line);
+  border-radius: 36px 36px 10px 10px / 26px 26px 10px 10px;
+}
+.tablet.is-current { border: 2px solid var(--accent); padding: 11px 5px 9px; }
+.tablet:disabled { cursor: default; opacity: 0.5; }
+.tablet-num { font-family: var(--display); font-size: 1.6rem; line-height: 1.1; }
+.tablet-name { font-size: 0.8rem; font-weight: 600; text-align: center; overflow-wrap: anywhere; }
+.tablet-meta { font-size: 0.72rem; color: var(--gold); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+.tablet:disabled .tablet-meta { color: var(--ink-2); }
+
+.cta {
+  height: 52px; border: 0; border-radius: 14px; cursor: pointer; background: var(--accent); color: var(--accent-ink);
+  font-weight: 600; font-size: 1.05rem; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 6px 18px rgba(11, 123, 119, 0.3);
+}
+.cta:active { transform: translateY(1px); }
+.ghost { height: 46px; border-radius: 12px; cursor: pointer; background: transparent; border: 1px solid var(--line); font-weight: 600; font-size: 0.95rem; }
+.note { margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--ink-2); }
+.keys { margin: -8px 0 0; font-size: 0.74rem; color: var(--ink-2); }
+@media (hover: none) { .keys { display: none; } }
+
+.stars { font-size: 2.1rem; letter-spacing: 0.12em; color: var(--gold); line-height: 1; }
+.stats { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stats div { background: var(--stele); border-radius: 12px; padding: 9px 12px; }
+.stats dt { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); }
+.stats dd { margin: 2px 0 0; font-size: 1.3rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.badge { justify-self: start; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-ink); background: var(--gold); padding: 4px 9px; border-radius: 999px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.actions .cta { grid-column: 1 / -1; }
+
+.nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-left, 0px)); text-align: center; font-size: 1rem; }
+
+@media (min-width: 760px) and (min-height: 560px) {
+  .screen { justify-content: center; align-items: flex-end; }
+  .card { margin: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast.is-in, .finger::before { animation: none; }
+}
+</style>
+
+<div id="stage">
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <canvas id="gl" aria-label="3D cube"></canvas>
+
+  <header id="hud" class="hud" hidden>
+    <div class="bar">
+      <button id="btnMenu" class="ibtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>
+      </button>
+      <div class="lvl"><span class="lvl-num" id="lvlNum">1</span><span id="lvlName">Kula</span></div>
+      <div class="time" id="time" aria-live="off">0:00.0</div>
+    </div>
+    <ol class="chips" id="chips"></ol>
+  </header>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <div class="toast-meta" id="toastMeta"></div>
+    <div class="toast-name" id="toastName"></div>
+    <div class="toast-text" id="toastText"></div>
+  </div>
+
+  <div id="hint" class="hint" hidden>
+    <div class="finger" aria-hidden="true"></div>
+    <div><p id="hintText"></p><p id="hintGoal"></p></div>
+  </div>
+
+  <footer id="controls" class="controls" hidden>
+    <button id="btnSpinL" class="ibtn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7.2C5.2 8.1 3 9.9 3 12c0 2.8 4 5 9 5s9-2.2 9-5c0-1.8-1.6-3.3-4-4.2"/><path d="M11.5 4.5 8.4 7.2l3 2.6"/></svg>
+    </button>
+    <button id="btnFlat" class="pill" type="button">Poravnaj</button>
+    <button id="btnSpinR" class="ibtn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 7.2C18.8 8.1 21 9.9 21 12c0 2.8-4 5-9 5s-9-2.2-9-5c0-1.8 1.6-3.3 4-4.2"/><path d="M12.5 4.5l3.1 2.7-3 2.6"/></svg>
+    </button>
+    <span class="gap" aria-hidden="true"></span>
+    <button id="btnRestart" class="ibtn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5v4.6h4.6"/></svg>
+    </button>
+    <button id="btnSound" class="ibtn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="on" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4"/><path class="off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+    </button>
+  </footer>
+
+  <section id="title" class="screen" aria-labelledby="gameTitle">
+    <div class="card">
+      <div class="head">
+        <div class="top-row">
+          <p class="eyebrow">Xplore Prokletije</p>
+          <div class="lang" role="group" aria-label="Jezik / Language">
+            <button type="button" data-lang="me" aria-pressed="true">ME</button>
+            <button type="button" data-lang="en" aria-pressed="false">EN</button>
+          </div>
+        </div>
+        <h1 id="gameTitle">Gusinjska kocka</h1>
+        <p class="tagline" id="tagline"></p>
+      </div>
+      <div class="levels" id="levels"></div>
+      <button id="btnPlay" class="cta" type="button">Igraj</button>
+      <p class="note" id="note"></p>
+      <p class="keys" id="keys"></p>
+    </div>
+  </section>
+
+  <section id="done" class="screen" hidden aria-labelledby="doneTitle">
+    <div class="card">
+      <div class="head">
+        <p class="eyebrow" id="doneLevel"></p>
+        <h2 id="doneTitle"></h2>
+      </div>
+      <div class="stars" id="doneStars" role="img"></div>
+      <span class="badge" id="doneNew" hidden></span>
+      <dl class="stats">
+        <div><dt id="doneTimeLabel"></dt><dd id="doneTime"></dd></div>
+        <div><dt id="doneBestLabel"></dt><dd id="doneBest"></dd></div>
+      </dl>
+      <p class="note" id="donePar"></p>
+      <p class="note" id="doneAll" hidden></p>
+      <div class="actions">
+        <button id="btnNext" class="cta" type="button"></button>
+        <button id="btnAgain" class="ghost" type="button"></button>
+        <button id="btnLevels" class="ghost" type="button"></button>
+      </div>
+    </div>
+  </section>
+
+  <div id="nogl" class="nogl" hidden></div>
+</div>
+
+<script type="module">
+// ---- core.js ----
+// ===== Gusinjska kocka — game core (no rendering, no DOM) =====
+// The cube has six faces, each a 9×9 grid of tiles (1 tile = 1 unit).
+// The ball is "magnetic": it always stays on the surface and is pushed by
+// the part of real-world gravity that lies along the face it is on.
+
+const N = 9;
+const H = N / 2;
+const BALL_R = 0.33;
+const TREE_R = 0.26;
+const PHYS = { G: 15, ROLL: 0.9, DAMP: 0.35, VMAX: 6.5, BOUNCE: 0.3, SUB: 4 };
+
+// Face frames. For each face: n = outward normal, u/v = in-plane axes (u × v = n).
+// Map strings: row 0 is the +v side, column 0 is the -u side.
+const FACES = [
+  { name: 'top',    n: [0, 1, 0],  u: [1, 0, 0],  v: [0, 0, -1] },
+  { name: 'front',  n: [0, 0, 1],  u: [1, 0, 0],  v: [0, 1, 0] },
+  { name: 'bottom', n: [0, -1, 0], u: [1, 0, 0],  v: [0, 0, 1] },
+  { name: 'back',   n: [0, 0, -1], u: [1, 0, 0],  v: [0, -1, 0] },
+  { name: 'left',   n: [-1, 0, 0], u: [0, 0, 1],  v: [0, 1, 0] },
+  { name: 'right',  n: [1, 0, 0],  u: [0, 0, -1], v: [0, 1, 0] },
+];
+const FACE_INDEX = Object.fromEntries(FACES.map((f, k) => [f.name, k]));
+
+const v3 = {
+  dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+  add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+  sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+  scale: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+  cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+  len: (a) => Math.hypot(a[0], a[1], a[2]),
+  norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; },
+};
+
+function facePoint(f, u, v, h = 0) {
+  const F = FACES[f], d = H + h;
+  return [d * F.n[0] + u * F.u[0] + v * F.v[0], d * F.n[1] + u * F.u[1] + v * F.v[1], d * F.n[2] + u * F.u[2] + v * F.v[2]];
+}
+const tileU = (i) => -H + i + 0.5;
+const tileV = (j) => H - j - 0.5;
+const tileI = (u) => Math.floor(u + H);
+const tileJ = (v) => Math.floor(H - v);
+
+function faceWithNormal(d) {
+  for (let k = 0; k < 6; k++) if (v3.dot(FACES[k].n, d) > 0.5) return k;
+  return -1;
+}
+
+// Fold a point (and optionally a velocity) that has gone past one edge of face f
+// onto the neighbouring face. Returns null in the corner region (past two edges).
+function fold(f, u, v, vu = 0, vv = 0) {
+  const F = FACES[f];
+  let d, delta;
+  const ou = Math.abs(u) > H, ov = Math.abs(v) > H;
+  if (ou && ov) return null;
+  if (ou) { d = u > 0 ? F.u : v3.scale(F.u, -1); delta = Math.abs(u) - H; }
+  else if (ov) { d = v > 0 ? F.v : v3.scale(F.v, -1); delta = Math.abs(v) - H; }
+  else return { f, u, v, vu, vv };
+  const p = facePoint(f, u, v);
+  const e = v3.sub(p, v3.scale(d, delta));
+  const q = v3.sub(e, v3.scale(F.n, delta));
+  const g = faceWithNormal(d), G = FACES[g];
+  const vel = v3.add(v3.scale(F.u, vu), v3.scale(F.v, vv));
+  const vd = v3.dot(vel, d);
+  const vel2 = v3.sub(v3.sub(vel, v3.scale(d, vd)), v3.scale(F.n, vd));
+  return { f: g, u: v3.dot(q, G.u), v: v3.dot(q, G.v), vu: v3.dot(vel2, G.u), vv: v3.dot(vel2, G.v) };
+}
+
+// ---------- Content ----------
+// Building letters (footprint, solid) and their lower-case door tiles.
+const BUILDINGS = {
+  K: { id: 'kula', name: { me: 'Kula Rašića', en: 'Rašić Tower' } },
+  J: { id: 'sebilj', name: { me: 'Sebilj', en: 'Sebilj fountain' } },
+  H: { id: 'kuca', name: { me: 'Stara kuća', en: 'Old house' } },
+  M: { id: 'vodenica', name: { me: 'Vodenica', en: 'Watermill' } },
+};
+const isBuildingChar = (c) => !!BUILDINGS[c];
+const isDoorChar = (c) => !!BUILDINGS[c.toUpperCase()] && c !== c.toUpperCase();
+const isSolidChar = (c) => c === '#' || isBuildingChar(c);
+const isPassableChar = (c) => c === '.' || c === '@' || isDoorChar(c);
+
+// Closed, decorative faces for parts of the cube a level doesn't use.
+const DECOR = [
+  ['#########', '#.T...T.#', '#...T...#', '#.T...T.#', '#...T...#', '#.T...T.#', '#...T...#', '#.T...T.#', '#########'],
+  ['#########', '#T..T..T#', '#.......#', '#..T.T..#', '#T.....T#', '#..T.T..#', '#.......#', '#T..T..T#', '#########'],
+  ['#########', '#.......#', '#.T.T.T.#', '#.......#', '#.T.~.T.#', '#.......#', '#.T.T.T.#', '#.......#', '#########'],
+];
+
+const LEVELS = [
+  {
+    key: 'kula', name: { me: 'Kula', en: 'The Tower' },
+    faces: {
+      top: [
+        '#########',
+        '#@......#',
+        '#.#####.#',
+        '#.......#',
+        '#..KKK..#',
+        '#..KKK..#',
+        '#..KKK..#',
+        '#T..k..T#',
+        '####.####',
+      ],
+      front: [
+        '####.####',
+        '#T.....T#',
+        '#.##.##.#',
+        '#.......#',
+        '#.#####.#',
+        '#...JJ..#',
+        '#...JJ..#',
+        '#T..j..T#',
+        '#########',
+      ],
+    },
+  },
+  {
+    key: 'izvori', name: { me: 'Izvori', en: 'The Springs' },
+    faces: {
+      top: [
+        '#########',
+        '#@..~~..#',
+        '#.#.~~.T#',
+        '#.#.....#',
+        '#...MM...',
+        '#~~.MM.T#',
+        '#~~..m..#',
+        '#T.....~#',
+        '#########',
+      ],
+      right: [
+        '####.####',
+        '#T.....T#',
+        '#.KKK...#',
+        '#.KKK.#.#',
+        '#.KKK.#.#',
+        '#..k..#.#',
+        '#.#####.#',
+        '........#',
+        '#########',
+      ],
+      front: [
+        '#########',
+        '#.......#',
+        '#.HHH.~~#',
+        '#.HHH.~~#',
+        '#..h....#',
+        '#~~~.##.#',
+        '#.......#',
+        '#T.......',
+        '#########',
+      ],
+    },
+  },
+  {
+    key: 'kocka', name: { me: 'Cijela kocka', en: 'Round the Cube' },
+    faces: {
+      left: [
+        '####.####',
+        '#T.....T#',
+        '#..###..#',
+        '#.......#',
+        '#.T.T.T.#',
+        '#.......#',
+        '#T..@..T#',
+        '#.......#',
+        '#########',
+      ],
+      top: [
+        '#########',
+        '#.......#',
+        '#.##.##.#',
+        '#..JJ...#',
+        '...JJ.#.#',
+        '#T.j..#.#',
+        '#..#..#..',
+        '#T.#....#',
+        '#########',
+      ],
+      right: [
+        '##.######',
+        '#..T....#',
+        '#.#.KKK.#',
+        '#.#.KKK.#',
+        '#.#.KKK.#',
+        '#.#..k..#',
+        '..####..#',
+        '#.......#',
+        '#########',
+      ],
+      front: [
+        '#########',
+        '#~~...~~#',
+        '#~..~...#',
+        '#..~~~..#',
+        '#.~...~.#',
+        '#...~...#',
+        '#.~~~....',
+        '#...~~~.#',
+        '##.######',
+      ],
+      bottom: [
+        '##.######',
+        '#.......#',
+        '#.~~~~~.#',
+        '#.~MM~..#',
+        '#..MM...#',
+        '#.~.m.~.#',
+        '#T.....T#',
+        '#..~.~..#',
+        '######.##',
+      ],
+      back: [
+        '######.##',
+        '#.......#',
+        '#.##.##.#',
+        '#..HHH..#',
+        '#T.HHH.T#',
+        '#~..h..~#',
+        '#~~...~~#',
+        '#T..T..T#',
+        '#########',
+      ],
+    },
+  },
+];
+
+// ---------- Level parsing ----------
+function parseLevel(def) {
+  const errors = [], warnings = [];
+  let decor = 0;
+  const grid = FACES.map((F) => {
+    const rows = def.faces[F.name] || DECOR[decor++ % DECOR.length];
+    if (rows.length !== N || rows.some((r) => r.length !== N)) errors.push(`${def.key}/${F.name}: map must be ${N}×${N}`);
+    return rows.map((r) => r.split(''));
+  });
+  const at = (f, i, j) => grid[f][j][i];
+
+  // Unfolded 13×13 view of each face: the face plus two rows of each neighbour, laid flat.
+  const UW = N + 4;
+  const unfolded = FACES.map((F, f) => {
+    const chars = new Array(UW * UW).fill('#');
+    const src = new Array(UW * UW).fill(null);
+    for (let j = -2; j < N + 2; j++) for (let i = -2; i < N + 2; i++) {
+      const k = (j + 2) * UW + (i + 2);
+      const inI = i >= 0 && i < N, inJ = j >= 0 && j < N;
+      if (inI && inJ) { chars[k] = at(f, i, j); src[k] = [f, i, j]; continue; }
+      if (!inI && !inJ) continue;
+      const r = fold(f, tileU(i), tileV(j));
+      const i2 = tileI(r.u), j2 = tileJ(r.v);
+      chars[k] = at(r.f, i2, j2); src[k] = [r.f, i2, j2];
+    }
+    return { chars, src };
+  });
+
+  const ufChar = (f, i, j) => (i < -2 || j < -2 || i >= N + 2 || j >= N + 2) ? '#' : unfolded[f].chars[(j + 2) * UW + (i + 2)];
+  const ufSrc = (f, i, j) => (i < -2 || j < -2 || i >= N + 2 || j >= N + 2) ? null : unfolded[f].src[(j + 2) * UW + (i + 2)];
+
+  // Start, buildings, doors
+  let start = null;
+  const buildings = {};
+  grid.forEach((rows, f) => rows.forEach((row, j) => row.forEach((c, i) => {
+    if (c === '@') { if (start) errors.push(`${def.key}: two starts`); start = { f, i, j }; }
+    if (isBuildingChar(c)) {
+      const b = buildings[c] || (buildings[c] = { letter: c, ...BUILDINGS[c], f, tiles: [], door: null });
+      if (b.f !== f) errors.push(`${def.key}: building ${c} on two faces`);
+      b.tiles.push([i, j]);
+    }
+  })));
+  grid.forEach((rows, f) => rows.forEach((row, j) => row.forEach((c, i) => {
+    if (isDoorChar(c)) {
+      const b = buildings[c.toUpperCase()];
+      if (!b) { errors.push(`${def.key}: door ${c} without building`); return; }
+      if (b.door) errors.push(`${def.key}: building ${c} has two doors`);
+      b.door = { f, i, j };
+    }
+  })));
+  if (!start) errors.push(`${def.key}: no start`);
+  for (const b of Object.values(buildings)) {
+    if (!b.door) { errors.push(`${def.key}: building ${b.letter} has no door`); continue; }
+    const is = b.tiles.map((t) => t[0]), js = b.tiles.map((t) => t[1]);
+    b.i0 = Math.min(...is); b.i1 = Math.max(...is); b.j0 = Math.min(...js); b.j1 = Math.max(...js);
+    if ((b.i1 - b.i0 + 1) * (b.j1 - b.j0 + 1) !== b.tiles.length) errors.push(`${def.key}: building ${b.letter} is not a rectangle`);
+    b.cu = (tileU(b.i0) + tileU(b.i1)) / 2; b.cv = (tileV(b.j0) + tileV(b.j1)) / 2;
+    const du = tileU(b.door.i) - b.cu, dv = tileV(b.door.j) - b.cv;
+    // Facing: the axis direction pointing at the door
+    if (Math.abs(du) > Math.abs(dv)) { b.face = [Math.sign(du), 0]; } else { b.face = [0, Math.sign(dv)]; }
+    const adj = b.tiles.some(([i, j]) => Math.abs(i - b.door.i) + Math.abs(j - b.door.j) === 1);
+    if (b.door.f !== b.f || !adj) errors.push(`${def.key}: door of ${b.letter} must touch the building`);
+  }
+
+  // Corners must be walls on every face (keeps the ball away from cube corners).
+  grid.forEach((rows, f) => {
+    for (const [i, j] of [[0, 0], [N - 1, 0], [0, N - 1], [N - 1, N - 1]])
+      if (at(f, i, j) !== '#') errors.push(`${def.key}/${FACES[f].name}: corner ${i},${j} must be #`);
+  });
+
+  // Gates: an open border tile should face an open tile on the neighbour.
+  const gates = [];
+  grid.forEach((rows, f) => rows.forEach((row, j) => row.forEach((c, i) => {
+    if (!(i === 0 || j === 0 || i === N - 1 || j === N - 1) || !isPassableChar(c) && c !== '~') return;
+    const dirs = [];
+    if (i === 0) dirs.push([-1, 0]); if (i === N - 1) dirs.push([1, 0]);
+    if (j === 0) dirs.push([0, -1]); if (j === N - 1) dirs.push([0, 1]);
+    for (const [di, dj] of dirs) {
+      const s = ufSrc(f, i + di, j + dj);
+      const c2 = ufChar(f, i + di, j + dj);
+      if (isPassableChar(c2) || c2 === '~') { if (f < s[0]) gates.push({ a: [f, i, j], b: s }); }
+      else warnings.push(`${def.key}/${FACES[f].name} ${i},${j}: open rim tile faces '${c2}' on ${FACES[s[0]].name} ${s[1]},${s[2]}`);
+    }
+  })));
+
+  const level = {
+    def, key: def.key, name: def.name, grid, at, ufChar, ufSrc, start,
+    buildings: Object.values(buildings), gates, errors, warnings,
+  };
+  level.doorAt = (f, i, j) => level.buildings.find((b) => b.door.f === f && b.door.i === i && b.door.j === j) || null;
+  return level;
+}
+
+// ---------- Tile graph (for checks and the demo autopilot) ----------
+function neighbours(level, f, i, j) {
+  const out = [];
+  for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const s = level.ufSrc(f, i + di, j + dj);
+    if (!s) continue;
+    const c = level.at(s[0], s[1], s[2]);
+    if (isPassableChar(c)) out.push(s);
+  }
+  return out;
+}
+function bfs(level, from, isGoal) {
+  const key = (t) => t.join(',');
+  const prev = new Map([[key(from), null]]);
+  const q = [from];
+  while (q.length) {
+    const t = q.shift();
+    if (isGoal(t)) { const path = []; let k = key(t), cur = t; while (cur) { path.push(cur); cur = prev.get(key(cur)); } return path.reverse(); }
+    for (const nb of neighbours(level, ...t)) { const k = key(nb); if (!prev.has(k)) { prev.set(k, t); q.push(nb); } }
+  }
+  return null;
+}
+
+// ---------- Ball physics ----------
+function collide(level, b) {
+  const r = BALL_R, B = PHYS.BOUNCE;
+  const ti = tileI(b.u), tj = tileJ(b.v);
+  const S = (i, j) => isSolidChar(level.ufChar(b.f, i, j));
+  const uMin = ti - H, uMax = uMin + 1, vMax = H - tj, vMin = vMax - 1;
+  let hit = 0;
+  if (S(ti, tj)) return -1; // inside a solid tile: caller restores
+  if (S(ti - 1, tj) && b.u - r < uMin) { b.u = uMin + r; if (b.vu < 0) { hit = Math.max(hit, -b.vu); b.vu = -b.vu * B; } }
+  if (S(ti + 1, tj) && b.u + r > uMax) { b.u = uMax - r; if (b.vu > 0) { hit = Math.max(hit, b.vu); b.vu = -b.vu * B; } }
+  if (S(ti, tj - 1) && b.v + r > vMax) { b.v = vMax - r; if (b.vv > 0) { hit = Math.max(hit, b.vv); b.vv = -b.vv * B; } }
+  if (S(ti, tj + 1) && b.v - r < vMin) { b.v = vMin + r; if (b.vv < 0) { hit = Math.max(hit, -b.vv); b.vv = -b.vv * B; } }
+  for (const [di, dj] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    if (!S(ti + di, tj + dj) || S(ti + di, tj) || S(ti, tj + dj)) continue;
+    const cu = di < 0 ? uMin : uMax, cv = dj < 0 ? vMax : vMin;
+    hit = Math.max(hit, pushFromPoint(b, cu, cv, r));
+  }
+  for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+    if (level.ufChar(b.f, ti + di, tj + dj) !== 'T') continue;
+    hit = Math.max(hit, pushFromPoint(b, tileU(ti + di), tileV(tj + dj), r + TREE_R));
+  }
+  return hit;
+}
+function pushFromPoint(b, cu, cv, rr) {
+  const du = b.u - cu, dv = b.v - cv, d2 = du * du + dv * dv;
+  if (d2 >= rr * rr || d2 < 1e-12) return 0;
+  const d = Math.sqrt(d2), nu = du / d, nv = dv / d;
+  b.u = cu + nu * rr; b.v = cv + nv * rr;
+  const vn = b.vu * nu + b.vv * nv;
+  if (vn < 0) { b.vu -= (1 + PHYS.BOUNCE) * vn * nu; b.vv -= (1 + PHYS.BOUNCE) * vn * nv; return -vn; }
+  return 0;
+}
+
+function stepBall(level, b, g, dt, events) {
+  const F = FACES[b.f];
+  let au = PHYS.G * v3.dot(g, F.u), av = PHYS.G * v3.dot(g, F.v);
+  const sp = Math.hypot(b.vu, b.vv);
+  if (sp > 1e-4) {
+    const dec = Math.min(PHYS.ROLL, sp / dt);
+    au -= dec * b.vu / sp; av -= dec * b.vv / sp;
+  } else {
+    const am = Math.hypot(au, av);
+    if (am <= PHYS.ROLL) { au = 0; av = 0; } else { au -= PHYS.ROLL * au / am; av -= PHYS.ROLL * av / am; }
+  }
+  b.vu += au * dt; b.vv += av * dt;
+  const damp = Math.exp(-PHYS.DAMP * dt);
+  b.vu *= damp; b.vv *= damp;
+  const sp2 = Math.hypot(b.vu, b.vv);
+  if (sp2 > PHYS.VMAX) { b.vu *= PHYS.VMAX / sp2; b.vv *= PHYS.VMAX / sp2; }
+  const pu = b.u, pv = b.v;
+  b.u += b.vu * dt; b.v += b.vv * dt;
+  const hit = collide(level, b);
+  if (hit < 0) { b.u = pu; b.v = pv; b.vu = 0; b.vv = 0; }
+  else if (hit > 1.2 && events) events.push({ type: 'bump', speed: hit });
+  if (Math.abs(b.u) > H || Math.abs(b.v) > H) {
+    const r = fold(b.f, b.u, b.v, b.vu, b.vv);
+    if (!r) { b.u = pu; b.v = pv; b.vu = 0; b.vv = 0; return; }
+    const from = b.f;
+    Object.assign(b, r);
+    if (events) events.push({ type: 'cross', from, to: b.f });
+  }
+}
+
+// ---------- Game state ----------
+class Game {
+  constructor(level) { this.level = level; this.reset(); }
+  reset() {
+    const s = this.level.start;
+    this.ball = { f: s.f, u: tileU(s.i), v: tileV(s.j), vu: 0, vv: 0 };
+    this.checkpoint = { f: s.f, u: tileU(s.i), v: tileV(s.j) };
+    this.visited = new Set();
+    this.phase = 'ready';
+    this.time = 0; this.sinkT = 0; this.splashes = 0;
+  }
+  begin() { if (this.phase === 'ready') this.phase = 'play'; }
+  get total() { return this.level.buildings.length; }
+  update(dt, g) {
+    const ev = [];
+    if (this.phase === 'play') {
+      this.time += dt;
+      const n = PHYS.SUB, h = dt / n;
+      for (let k = 0; k < n && this.phase === 'play'; k++) {
+        stepBall(this.level, this.ball, g, h, ev);
+        const b = this.ball, i = tileI(b.u), j = tileJ(b.v);
+        if (i < 0 || j < 0 || i >= N || j >= N) continue;
+        const c = this.level.at(b.f, i, j);
+        if (c === '~') { this.phase = 'sink'; this.sinkT = 0; this.splashes++; ev.push({ type: 'sink' }); }
+        else if (isDoorChar(c)) {
+          const bld = this.level.doorAt(b.f, i, j);
+          if (bld && !this.visited.has(bld.letter)) {
+            this.visited.add(bld.letter);
+            this.checkpoint = { f: b.f, u: tileU(i), v: tileV(j) };
+            ev.push({ type: 'visit', building: bld, count: this.visited.size, total: this.total });
+            if (this.visited.size === this.total) { this.phase = 'done'; ev.push({ type: 'complete', time: this.time }); }
+          }
+        }
+      }
+    } else if (this.phase === 'sink') {
+      this.time += dt;
+      this.sinkT += dt;
+      if (this.sinkT > 0.75) {
+        const c = this.checkpoint;
+        this.ball = { f: c.f, u: c.u, v: c.v, vu: 0, vv: 0 };
+        this.phase = 'play';
+        ev.push({ type: 'respawn' });
+      }
+    }
+    return ev;
+  }
+}
+
+// Three-star times (about 1.8× the autopilot's best run).
+const PARS = { kula: 21, izvori: 33, kocka: 84 };
+
+function stars(time, par) { return time <= par ? 3 : time <= par * 1.6 ? 2 : 1; }
+
+// ---------- Autopilot (demo + automated tests) ----------
+// Returns a function (dt) => gravity vector in cube coordinates that steers the ball
+// to the nearest unvisited door, the way a careful player would tilt the cube.
+function makeAutopilot(game, opts = {}) {
+  const speed = opts.speed ?? 2.0;
+  let path = null, k = 0, replanT = 0, lastVisited = -1;
+  const plan = () => {
+    const b = game.ball, L = game.level;
+    const from = [b.f, tileI(b.u), tileJ(b.v)];
+    path = bfs(L, from, ([f, i, j]) => { const d = L.doorAt(f, i, j); return d && !game.visited.has(d.letter); });
+    k = 1; replanT = 0; lastVisited = game.visited.size;
+  };
+  return (dt) => {
+    const b = game.ball, F = FACES[b.f];
+    if (!path || lastVisited !== game.visited.size || (replanT += dt) > 1.5) plan();
+    if (!path || game.phase !== 'play') return v3.scale(F.n, -1);
+    // Target position of path[k] in the ball's face frame (unfolded if on a neighbour).
+    const targetUV = (t) => {
+      if (!t) return null;
+      if (t[0] === b.f) return [tileU(t[1]), tileV(t[2])];
+      const ti = tileI(b.u), tj = tileJ(b.v);
+      for (let dj = -2; dj <= 2; dj++) for (let di = -2; di <= 2; di++) {
+        const s = game.level.ufSrc(b.f, ti + di, tj + dj);
+        if (s && s[0] === t[0] && s[1] === t[1] && s[2] === t[2]) return [tileU(ti + di), tileV(tj + dj)];
+      }
+      return null;
+    };
+    let T = targetUV(path[k]);
+    while (T && k < path.length - 1 && Math.hypot(T[0] - b.u, T[1] - b.v) < 0.28) { k++; T = targetUV(path[k]); }
+    if (!T) { plan(); T = targetUV(path && path[k]); if (!T) return v3.scale(F.n, -1); }
+    let du = T[0] - b.u, dv = T[1] - b.v; const dist = Math.hypot(du, dv) || 1;
+    du /= dist; dv /= dist;
+    // Slow down before a turn
+    const nextT = targetUV(path[k + 1]);
+    let vdes = speed;
+    if (nextT) {
+      const nu = nextT[0] - T[0], nv = nextT[1] - T[1], nl = Math.hypot(nu, nv) || 1;
+      const turn = 1 - (du * nu + dv * nv) / nl;
+      vdes = speed * Math.max(0.35, 1 - 0.6 * turn * Math.max(0, 1 - dist));
+    }
+    let au = 7 * (du * vdes - b.vu), av = 7 * (dv * vdes - b.vv);
+    // Cancel rolling resistance
+    const sp = Math.hypot(b.vu, b.vv);
+    if (sp > 1e-3) { au += PHYS.ROLL * b.vu / sp; av += PHYS.ROLL * b.vv / sp; } else { au += PHYS.ROLL * du; av += PHYS.ROLL * dv; }
+    let gu = au / PHYS.G, gv = av / PHYS.G; const gl = Math.hypot(gu, gv);
+    if (gl > 0.75) { gu *= 0.75 / gl; gv *= 0.75 / gl; }
+    const gn = -Math.sqrt(Math.max(0, 1 - gu * gu - gv * gv));
+    return v3.add(v3.add(v3.scale(F.u, gu), v3.scale(F.v, gv)), v3.scale(F.n, gn));
+  };
+}
+
+// ---- render.js ----
+// ===== Gusinjska kocka — tiny WebGL renderer (no libraries, works offline) =====
+
+// ---------- math ----------
+const q = {
+  ident: () => [0, 0, 0, 1],
+  axis(ax, a) { const s = Math.sin(a / 2); return [ax[0] * s, ax[1] * s, ax[2] * s, Math.cos(a / 2)]; },
+  mul(a, b) {
+    return [
+      a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+      a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+      a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+      a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
+    ];
+  },
+  conj: (a) => [-a[0], -a[1], -a[2], a[3]],
+  norm(a) { const l = Math.hypot(a[0], a[1], a[2], a[3]) || 1; return [a[0] / l, a[1] / l, a[2] / l, a[3] / l]; },
+  rot(a, v) {
+    const [x, y, z, w] = a;
+    const tx = 2 * (y * v[2] - z * v[1]), ty = 2 * (z * v[0] - x * v[2]), tz = 2 * (x * v[1] - y * v[0]);
+    return [v[0] + w * tx + (y * tz - z * ty), v[1] + w * ty + (z * tx - x * tz), v[2] + w * tz + (x * ty - y * tx)];
+  },
+  fromTo(a, b) {
+    const d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    if (d < -0.999999) {
+      let ax = [0, -a[2], a[1]]; if (Math.hypot(...ax) < 1e-6) ax = [-a[2], 0, a[0]];
+      const l = Math.hypot(...ax); return q.axis([ax[0] / l, ax[1] / l, ax[2] / l], Math.PI);
+    }
+    const c = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    return q.norm([c[0], c[1], c[2], 1 + d]);
+  },
+  slerp(a, b, t) {
+    let d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    let bb = b; if (d < 0) { d = -d; bb = [-b[0], -b[1], -b[2], -b[3]]; }
+    if (d > 0.9995) return q.norm(a.map((x, i) => x + (bb[i] - x) * t));
+    const th = Math.acos(d), s = Math.sin(th), wa = Math.sin((1 - t) * th) / s, wb = Math.sin(t * th) / s;
+    return a.map((x, i) => x * wa + bb[i] * wb);
+  },
+};
+
+const m4 = {
+  ident: () => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+  mul(a, b) {
+    const o = new Float32Array(16);
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+      o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    }
+    return o;
+  },
+  perspective(fovy, aspect, near, far) {
+    const f = 1 / Math.tan(fovy / 2), nf = 1 / (near - far);
+    return new Float32Array([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0]);
+  },
+  lookAt(eye, t, up) {
+    let z = [eye[0] - t[0], eye[1] - t[1], eye[2] - t[2]]; let l = Math.hypot(...z); z = z.map((x) => x / l);
+    let x = [up[1] * z[2] - up[2] * z[1], up[2] * z[0] - up[0] * z[2], up[0] * z[1] - up[1] * z[0]]; l = Math.hypot(...x); x = x.map((v) => v / l);
+    const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+    const d = (a) => a[0] * eye[0] + a[1] * eye[1] + a[2] * eye[2];
+    return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -d(x), -d(y), -d(z), 1]);
+  },
+  // Rotation from quaternion, then uniform scale, then translation.
+  fromQ(qq, p = [0, 0, 0], s = 1) {
+    const [x, y, z, w] = qq;
+    const xx = x * x, yy = y * y, zz = z * z, xy = x * y, xz = x * z, yz = y * z, wx = w * x, wy = w * y, wz = w * z;
+    return new Float32Array([
+      (1 - 2 * (yy + zz)) * s, 2 * (xy + wz) * s, 2 * (xz - wy) * s, 0,
+      2 * (xy - wz) * s, (1 - 2 * (xx + zz)) * s, 2 * (yz + wx) * s, 0,
+      2 * (xz + wy) * s, 2 * (yz - wx) * s, (1 - 2 * (xx + yy)) * s, 0,
+      p[0], p[1], p[2], 1,
+    ]);
+  },
+  // Columns X, Y, Z as basis, origin p.
+  basis(X, Y, Z, p = [0, 0, 0], s = 1) {
+    return new Float32Array([X[0] * s, X[1] * s, X[2] * s, 0, Y[0] * s, Y[1] * s, Y[2] * s, 0, Z[0] * s, Z[1] * s, Z[2] * s, 0, p[0], p[1], p[2], 1]);
+  },
+  apply(m, v) {
+    const w = m[3] * v[0] + m[7] * v[1] + m[11] * v[2] + m[15];
+    return [(m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12]) / w, (m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13]) / w, (m[2] * v[0] + m[6] * v[1] + m[10] * v[2] + m[14]) / w];
+  },
+};
+function normalMat(m) {
+  // Upper-left 3×3 (rotation × uniform scale); the shader renormalises.
+  return new Float32Array([m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]]);
+}
+
+// ---------- colours ----------
+function hex(h, a = 1) { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255, a]; }
+function jitter(c, amt, rnd) {
+  const k = 1 + (rnd() * 2 - 1) * amt, hue = (rnd() * 2 - 1) * amt * 0.35;
+  return [Math.min(1, c[0] * k * (1 + hue)), Math.min(1, c[1] * k), Math.min(1, c[2] * k * (1 - hue)), c[3]];
+}
+function shade(c, k) { return [c[0] * k, c[1] * k, c[2] * k, c[3]]; }
+function mulberry(seed) {
+  let a = seed >>> 0;
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+
+// ---------- mesh builder ----------
+// Geometry is written in a local frame (x right, y up, z forward) that maps into
+// target space through setFrame(origin, X, Y, Z).
+class MeshBuilder {
+  constructor() { this.pos = []; this.nor = []; this.col = []; this.kind = []; this.idx = []; this.setFrame([0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]); }
+  setFrame(o, X, Y, Z) { this.o = o; this.X = X; this.Y = Y; this.Z = Z; return this; }
+  P(p) { const { o, X, Y, Z } = this; return [o[0] + p[0] * X[0] + p[1] * Y[0] + p[2] * Z[0], o[1] + p[0] * X[1] + p[1] * Y[1] + p[2] * Z[1], o[2] + p[0] * X[2] + p[1] * Y[2] + p[2] * Z[2]]; }
+  Nv(n) { const { X, Y, Z } = this; const r = [n[0] * X[0] + n[1] * Y[0] + n[2] * Z[0], n[0] * X[1] + n[1] * Y[1] + n[2] * Z[1], n[0] * X[2] + n[1] * Y[2] + n[2] * Z[2]]; const l = Math.hypot(...r) || 1; return r.map((x) => x / l); }
+  vert(p, n, c, k) { this.pos.push(...this.P(p)); this.nor.push(...this.Nv(n)); this.col.push(c[0], c[1], c[2], c[3] ?? 1); this.kind.push(k); return this.pos.length / 3 - 1; }
+  get count() { return this.pos.length / 3; }
+  // Flat polygon; normal from the points, flipped to point away from `inside` when given.
+  poly(pts, c, k = 0, inside = null, cols = null) {
+    let n = [0, 0, 0];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      n[0] += (a[1] - b[1]) * (a[2] + b[2]); n[1] += (a[2] - b[2]) * (a[0] + b[0]); n[2] += (a[0] - b[0]) * (a[1] + b[1]);
+    }
+    const l = Math.hypot(...n) || 1; n = n.map((x) => x / l);
+    if (inside) {
+      const cen = pts.reduce((s, p) => [s[0] + p[0] / pts.length, s[1] + p[1] / pts.length, s[2] + p[2] / pts.length], [0, 0, 0]);
+      if ((cen[0] - inside[0]) * n[0] + (cen[1] - inside[1]) * n[1] + (cen[2] - inside[2]) * n[2] < 0) n = n.map((x) => -x);
+    }
+    const base = this.count;
+    pts.forEach((p, i) => this.vert(p, n, cols ? cols[i] : c, k));
+    for (let i = 1; i < pts.length - 1; i++) this.idx.push(base, base + i, base + i + 1);
+    return this;
+  }
+  box(cx, cy, cz, hx, hy, hz, c, k = 0, bottom = false) {
+    const x0 = cx - hx, x1 = cx + hx, y0 = cy - hy, y1 = cy + hy, z0 = cz - hz, z1 = cz + hz, ins = [cx, cy, cz];
+    this.poly([[x0, y1, z0], [x0, y1, z1], [x1, y1, z1], [x1, y1, z0]], c, k, ins);
+    const side = shade(c, 1);
+    this.poly([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], side, k, ins);
+    this.poly([[x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [x1, y0, z0]], side, k, ins);
+    this.poly([[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]], side, k, ins);
+    this.poly([[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]], side, k, ins);
+    if (bottom) this.poly([[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], c, k, ins);
+    return this;
+  }
+  // Frustum / cone / prism around the y axis. r1 = 0 makes a cone.
+  frustum(cx, cz, y0, y1, r0, r1, segs, c, k = 0, rot = 0, cap = true, capCol = null) {
+    const ring = (r, y) => Array.from({ length: segs }, (_, i) => { const a = rot + i / segs * Math.PI * 2; return [cx + Math.cos(a) * r, y, cz + Math.sin(a) * r]; });
+    const A = ring(r0, y0), B = ring(r1, y1), ins = [cx, (y0 + y1) / 2, cz];
+    for (let i = 0; i < segs; i++) {
+      const j = (i + 1) % segs;
+      if (r1 > 1e-6) this.poly([A[i], A[j], B[j], B[i]], c, k, [cx, (y0 + y1) / 2, cz]);
+      else this.poly([A[i], A[j], [cx, y1, cz]], c, k, [cx, y0, cz]);
+    }
+    if (cap && r1 > 1e-6) this.poly(B, capCol || c, k, ins);
+    return this;
+  }
+  sphere(r, ws, hs, colorAt, k = 4) {
+    const base = this.count;
+    for (let y = 0; y <= hs; y++) {
+      const th = y / hs * Math.PI;
+      for (let x = 0; x <= ws; x++) {
+        const ph = x / ws * Math.PI * 2;
+        const n = [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)];
+        this.vert([n[0] * r, n[1] * r, n[2] * r], n, colorAt(n), k);
+      }
+    }
+    for (let y = 0; y < hs; y++) for (let x = 0; x < ws; x++) {
+      const a = base + y * (ws + 1) + x, b = a + ws + 1;
+      this.idx.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+    return this;
+  }
+  // Soft round blob (centre alpha a, rim 0) lying in the local xz plane.
+  blob(r, a, segs = 20) {
+    const base = this.vert([0, 0, 0], [0, 1, 0], [0, 0, 0, a], 3);
+    for (let i = 0; i < segs; i++) { const t = i / segs * Math.PI * 2; this.vert([Math.cos(t) * r, 0, Math.sin(t) * r], [0, 1, 0], [0, 0, 0, 0], 3); }
+    for (let i = 0; i < segs; i++) this.idx.push(base, base + 1 + i, base + 1 + (i + 1) % segs);
+    return this;
+  }
+}
+
+// ---------- GPU ----------
+const VS = `
+attribute vec3 aPos; attribute vec3 aNor; attribute vec4 aCol; attribute float aKind;
+uniform mat4 uModel; uniform mat4 uVP; uniform mat3 uNM;
+varying vec3 vN; varying vec4 vC; varying float vK; varying vec3 vW;
+void main(){ vec4 w = uModel*vec4(aPos,1.0); vW = w.xyz; vN = uNM*aNor; vC = aCol; vK = aKind; gl_Position = uVP*w; }`;
+const FS = `
+precision mediump float;
+varying vec3 vN; varying vec4 vC; varying float vK; varying vec3 vW;
+uniform vec3 uSun; uniform vec3 uCam; uniform float uTime; uniform vec4 uTint; uniform float uAlpha; uniform float uGlow;
+void main(){
+  float k = vK;
+  if (k > 2.5 && k < 3.5) { gl_FragColor = vec4(0.04, 0.06, 0.03, 1.0) * (vC.a * uAlpha); return; }
+  vec3 n = normalize(vN);
+  vec3 base = vC.rgb;
+  if (k > 0.5 && k < 1.5) {
+    float s = sin(vW.x*2.3 + uTime*1.7) * sin(vW.z*2.1 - uTime*1.3 + vW.y*1.9);
+    base = mix(base, vec3(0.80,0.96,1.0), 0.14 + 0.12*s);
+  }
+  base = mix(base, uTint.rgb, uTint.a);
+  float hemi = 0.5 + 0.5*n.y;
+  vec3 amb = mix(vec3(0.40,0.39,0.33), vec3(0.80,0.87,0.95), hemi) * 0.66;
+  float diff = max(dot(n, uSun), 0.0);
+  vec3 col = base * (amb + vec3(1.0,0.95,0.86)*diff*0.74);
+  vec3 vd = normalize(uCam - vW);
+  if ((k > 0.5 && k < 1.5) || k > 3.5) {
+    vec3 h = normalize(uSun + vd);
+    float sp = k > 3.5 ? pow(max(dot(n,h),0.0), 36.0)*0.45 : pow(max(dot(n,h),0.0), 70.0)*0.7;
+    col += vec3(1.0,0.98,0.92)*sp;
+  }
+  if (k > 1.5 && k < 2.5) col += uTint.rgb * uGlow;
+  float rim = pow(1.0 - max(dot(n, vd), 0.0), 3.0);
+  col += vec3(0.75,0.85,0.95) * rim * 0.08;
+  gl_FragColor = vec4(col, 1.0) * uAlpha;
+}`;
+
+class Renderer {
+  constructor(canvas) {
+    const opts = { antialias: true, alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: false };
+    let gl = canvas.getContext('webgl2', opts);
+    this.gl2 = !!gl;
+    if (!gl) gl = canvas.getContext('webgl', opts) || canvas.getContext('experimental-webgl', opts);
+    if (!gl) throw new Error('WebGL not available');
+    this.gl = gl;
+    this.uint32 = this.gl2 || !!gl.getExtension('OES_element_index_uint');
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+    const p = gl.createProgram();
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    this.prog = p;
+    this.a = {}; for (const n of ['aPos', 'aNor', 'aCol', 'aKind']) this.a[n] = gl.getAttribLocation(p, n);
+    this.u = {}; for (const n of ['uModel', 'uVP', 'uNM', 'uSun', 'uCam', 'uTime', 'uTint', 'uAlpha', 'uGlow']) this.u[n] = gl.getUniformLocation(p, n);
+    gl.useProgram(p);
+    gl.enable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.clearColor(0, 0, 0, 0);
+  }
+  upload(mb) {
+    const gl = this.gl;
+    if (mb.count > 65535 && !this.uint32) throw new Error('mesh too large');
+    const mk = (data, target = gl.ARRAY_BUFFER) => { const b = gl.createBuffer(); gl.bindBuffer(target, b); gl.bufferData(target, data, gl.STATIC_DRAW); return b; };
+    const big = mb.count > 65535;
+    return {
+      pos: mk(new Float32Array(mb.pos)), nor: mk(new Float32Array(mb.nor)), col: mk(new Float32Array(mb.col)), kind: mk(new Float32Array(mb.kind)),
+      idx: mk(big ? new Uint32Array(mb.idx) : new Uint16Array(mb.idx), gl.ELEMENT_ARRAY_BUFFER),
+      n: mb.idx.length, type: big ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
+    };
+  }
+  free(mesh) { if (!mesh) return; const gl = this.gl; for (const k of ['pos', 'nor', 'col', 'kind', 'idx']) gl.deleteBuffer(mesh[k]); }
+  begin(w, h, vp, cam, sun, time) {
+    const gl = this.gl;
+    gl.viewport(0, 0, w, h);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.uniformMatrix4fv(this.u.uVP, false, vp);
+    gl.uniform3fv(this.u.uCam, cam);
+    gl.uniform3fv(this.u.uSun, sun);
+    gl.uniform1f(this.u.uTime, time % 1000);
+  }
+  draw(mesh, model, { tint = [0, 0, 0, 0], alpha = 1, glow = 0, depthTest = true, depthWrite = true } = {}) {
+    const gl = this.gl;
+    gl.uniformMatrix4fv(this.u.uModel, false, model);
+    gl.uniformMatrix3fv(this.u.uNM, false, normalMat(model));
+    gl.uniform4fv(this.u.uTint, tint);
+    gl.uniform1f(this.u.uAlpha, alpha);
+    gl.uniform1f(this.u.uGlow, glow);
+    if (depthTest) gl.enable(gl.DEPTH_TEST); else gl.disable(gl.DEPTH_TEST);
+    gl.depthMask(depthWrite);
+    const bind = (b, loc, size) => { if (loc < 0) return; gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0); };
+    bind(mesh.pos, this.a.aPos, 3); bind(mesh.nor, this.a.aNor, 3); bind(mesh.col, this.a.aCol, 4); bind(mesh.kind, this.a.aKind, 1);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.idx);
+    gl.drawElements(gl.TRIANGLES, mesh.n, mesh.type, 0);
+    gl.depthMask(true);
+  }
+}
+
+// ---- main.js ----
+// ===== Gusinjska kocka — scene, input and screens =====
+
+
+// ---------- text ----------
+const TXT = {
+  me: {
+    tagline: 'Nagni kocku i otkotrljaj kuglu do gusinjskih građevina.',
+    play: 'Igraj', level: 'Nivo', locked: 'Zaključano', best: 'Najbolje',
+    hint: 'Prevuci prstom preko ekrana. Kocka se naginje, a kugla se kotrlja nizbrdo.',
+    goal: 'Dovedi kuglu do vrata svake građevine.',
+    visited: 'Posjećeno', splash: 'Pljus! Probaj ponovo.',
+    complete: 'Bravo!', time: 'Vrijeme', next: 'Sljedeći nivo', again: 'Ponovo', levels: 'Nivoi',
+    spinL: 'Okreni kocku ulijevo', spinR: 'Okreni kocku udesno', flat: 'Poravnaj', flatLabel: 'Poravnaj stranu s kuglom',
+    restart: 'Kreni iz početka', soundOn: 'Isključi zvuk', soundOff: 'Uključi zvuk', menu: 'Nivoi',
+    note: 'Građevine su privremeni modeli. Uskoro stižu vaši 3D modeli i priče.',
+    stub: 'Privremeni model. Ovdje dolaze vaš 3D model i kratka priča.',
+    par: 'Tri zvjezdice: do {par} s', newBest: 'Novi rekord', allDone: 'Svi nivoi su završeni.',
+    noGL: 'Ovaj preglednik ne može prikazati 3D. Probaj u Chromeu ili Safariju.',
+    keys: 'Tastatura: strelice naginju, Q i E okreću, razmak poravnava.',
+  },
+  en: {
+    tagline: 'Tilt the cube and roll the ball to the landmarks of Gusinje.',
+    play: 'Play', level: 'Level', locked: 'Locked', best: 'Best',
+    hint: 'Drag across the screen. The cube tilts and the ball rolls downhill.',
+    goal: 'Roll the ball to the door of every building.',
+    visited: 'Visited', splash: 'Splash! Try again.',
+    complete: 'Well done!', time: 'Time', next: 'Next level', again: 'Again', levels: 'Levels',
+    spinL: 'Turn the cube left', spinR: 'Turn the cube right', flat: 'Level', flatLabel: 'Level the ball’s face',
+    restart: 'Start over', soundOn: 'Mute', soundOff: 'Unmute', menu: 'Levels',
+    note: 'The buildings are stand-in models. Your own 3D models and stories come next.',
+    stub: 'Stand-in model. Your 3D model and a short story go here.',
+    par: 'Three stars: {par} s or less', newBest: 'New best', allDone: 'All levels complete.',
+    noGL: 'This browser can’t show 3D. Try Chrome or Safari.',
+    keys: 'Keyboard: arrows tilt, Q and E turn, space levels.',
+  },
+};
+
+// ---------- persistent progress (per browser) ----------
+const STORE = 'gusinjska-kocka/v1';
+function loadSave() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } }
+function writeSave() { try { localStorage.setItem(STORE, JSON.stringify(save)); } catch { /* storage unavailable */ } }
+const save = Object.assign({ done: {}, muted: false, lang: null }, loadSave());
+let lang = save.lang || (/^(sr|bs|hr|me|cnr|sh)/i.test(navigator.language || '') ? 'me' : 'en');
+const t = (k) => TXT[lang][k];
+
+// ---------- colours of the little world ----------
+const C = {
+  grass: hex('#7fa35b'), grass2: hex('#77a055'), earth: hex('#675c4b'), paving: hex('#aaa395'),
+  stone: hex('#aba494'), stoneDark: hex('#8d8676'), kula: hex('#b9b09f'), water: hex('#38a3b5'), bank: hex('#5c5344'),
+  slab: hex('#ccc5b5'), pine: hex('#34603e'), pineTop: hex('#477a4a'), trunk: hex('#6a4a33'),
+  wood: hex('#80593a'), woodDark: hex('#56392a'), plaster: hex('#ebe6da'), roof: hex('#5e4b3f'), shingle: hex('#6b5a4c'),
+  lead: hex('#7d8d93'), gold: hex('#d8a43a'), dark: hex('#2a2621'), teal: hex('#0f8f8a'),
+  ballA: hex('#c9412c'), ballB: hex('#f3eee2'),
+};
+const TEAL = [0.06, 0.62, 0.60, 0.65], GOLD = [0.92, 0.70, 0.22, 0.75];
+
+// ---------- buildings (stand-in models) ----------
+// Local frame: x right, y up, z towards the door. Footprint W (x) × D (z) tiles.
+function sideBox(mb, side, hw, hd, along, y, w, h, c, out = 0.02) {
+  // side: 0 front(+z) 1 back(-z) 2 right(+x) 3 left(-x)
+  if (side === 0) mb.box(along, y, hd + out / 2, w / 2, h / 2, out / 2 + 0.005, c);
+  if (side === 1) mb.box(along, y, -hd - out / 2, w / 2, h / 2, out / 2 + 0.005, c);
+  if (side === 2) mb.box(hw + out / 2, y, along, out / 2 + 0.005, h / 2, w / 2, c);
+  if (side === 3) mb.box(-hw - out / 2, y, along, out / 2 + 0.005, h / 2, w / 2, c);
+}
+const MODELS = {
+  kula(mb, W, D) {
+    const hw = Math.min(W, D) * 0.38, top = 2.7;
+    mb.box(0, 0.1, 0, hw + 0.14, 0.1, hw + 0.14, C.stoneDark);
+    mb.box(0, 0.2 + (top - 0.2) / 2, 0, hw, (top - 0.2) / 2, hw, C.kula);
+    mb.box(0, 1.9, 0, hw + 0.04, 0.045, hw + 0.04, C.stoneDark);
+    for (let s = 0; s < 4; s++) {
+      sideBox(mb, s, hw, hw, 0, 1.25, 0.12, 0.34, C.dark);
+      sideBox(mb, s, hw, hw, -0.42, 2.3, 0.22, 0.3, C.dark); sideBox(mb, s, hw, hw, 0.42, 2.3, 0.22, 0.3, C.dark);
+    }
+    sideBox(mb, 0, hw, hw, 0, 0.58, 0.46, 0.76, C.woodDark, 0.03);
+    sideBox(mb, 0, hw, hw, 0, 1.0, 0.62, 0.08, C.stoneDark, 0.05);
+    mb.box(0, top + 0.04, 0, hw + 0.1, 0.04, hw + 0.1, C.woodDark);
+    mb.frustum(0, 0, top + 0.08, top + 1.1, (hw + 0.24) * Math.SQRT2, 0, 4, C.roof, 0, Math.PI / 4);
+    return { height: top + 1.1 };
+  },
+  sebilj(mb, W, D) {
+    const R = Math.min(W, D) * 0.4, rot = Math.PI / 8;
+    mb.frustum(0, 0, 0, 0.16, R + 0.06, R, 8, C.slab, 0, rot);
+    mb.frustum(0, 0, 0.16, 0.5, 0.34, 0.3, 8, C.plaster, 0, rot, true, C.water);
+    for (let k = 0; k < 8; k++) { const a = rot + k * Math.PI / 4; mb.box(Math.cos(a) * R * 0.88, 0.66, Math.sin(a) * R * 0.88, 0.045, 0.5, 0.045, C.wood); }
+    mb.frustum(0, 0, 0.98, 1.16, R * 0.93, R * 0.93, 8, C.wood, 0, rot, false);
+    mb.frustum(0, 0, 1.16, 1.24, R * 1.22, R * 1.22, 8, C.woodDark, 0, rot);
+    mb.frustum(0, 0, 1.24, 1.62, R * 1.22, R * 0.7, 8, C.lead, 0, rot);
+    mb.frustum(0, 0, 1.62, 1.86, R * 0.7, 0, 8, C.lead, 0, rot);
+    mb.frustum(0, 0, 1.86, 2.1, 0.05, 0.03, 6, C.gold);
+    mb.frustum(0, 0, 2.1, 2.22, 0.08, 0, 6, C.gold);
+    return { height: 2.2 };
+  },
+  kuca(mb, W, D) {
+    const hx = W * 0.42, hz = D * 0.38, eave = 1.66, ridge = 2.5;
+    mb.box(0, 0.45, 0, hx, 0.45, hz, C.stone);
+    mb.box(0, 0.93, 0, hx + 0.1, 0.035, hz + 0.1, C.woodDark);
+    mb.box(0, 0.96 + (eave - 0.96) / 2, 0, hx + 0.08, (eave - 0.96) / 2, hz + 0.08, C.plaster);
+    sideBox(mb, 0, hx, hz, 0, 0.42, 0.42, 0.7, C.woodDark, 0.03);
+    for (const x of [-0.85, 0, 0.85]) { sideBox(mb, 0, hx + 0.08, hz + 0.08, x, 1.32, 0.3, 0.36, C.dark); sideBox(mb, 1, hx + 0.08, hz + 0.08, x, 1.32, 0.3, 0.36, C.dark); }
+    sideBox(mb, 0, hx, hz, -0.75, 0.5, 0.18, 0.22, C.dark); sideBox(mb, 0, hx, hz, 0.75, 0.5, 0.18, 0.22, C.dark);
+    const ox = hx + 0.26, oz = hz + 0.3, ins = [0, 1.2, 0];
+    mb.poly([[-ox, eave - 0.06, oz], [ox, eave - 0.06, oz], [ox, ridge, 0], [-ox, ridge, 0]], C.shingle, 0, ins);
+    mb.poly([[-ox, eave - 0.06, -oz], [-ox, ridge, 0], [ox, ridge, 0], [ox, eave - 0.06, -oz]], shade(C.shingle, 0.92), 0, ins);
+    const gx = hx + 0.08;
+    mb.poly([[gx, eave, hz + 0.08], [gx, eave, -hz - 0.08], [gx, ridge - 0.05, 0]], C.plaster, 0, ins);
+    mb.poly([[-gx, eave, hz + 0.08], [-gx, ridge - 0.05, 0], [-gx, eave, -hz - 0.08]], C.plaster, 0, ins);
+    mb.box(0.62, 2.35, -0.25, 0.12, 0.3, 0.12, C.stoneDark);
+    return { height: ridge };
+  },
+  vodenica(mb, W, D) {
+    const hx = Math.min(W, D) * 0.3, hz = Math.min(W, D) * 0.28, wall = 0.95, ridge = 1.75;
+    mb.box(-0.08, 0.1, 0, hx + 0.14, 0.1, hz + 0.14, C.stoneDark);
+    mb.box(-0.08, 0.2 + (wall - 0.2) / 2, 0, hx, (wall - 0.2) / 2, hz, C.wood);
+    for (const y of [0.42, 0.62, 0.82]) mb.box(-0.08, y, 0, hx + 0.012, 0.012, hz + 0.012, C.woodDark);
+    sideBox(mb, 0, hx, hz, -0.08, 0.5, 0.34, 0.56, C.dark, 0.03);
+    const ox = hx + 0.18, oz = hz + 0.2, ins = [-0.08, 0.8, 0];
+    mb.poly([[-ox - 0.08, wall, oz], [ox - 0.08, wall, oz], [ox - 0.08, ridge, 0], [-ox - 0.08, ridge, 0]], C.shingle, 0, ins);
+    mb.poly([[-ox - 0.08, wall, -oz], [-ox - 0.08, ridge, 0], [ox - 0.08, ridge, 0], [ox - 0.08, wall, -oz]], shade(C.shingle, 0.92), 0, ins);
+    for (const s of [1, -1]) mb.poly([[s * hx - 0.08, wall, hz], [s * hx - 0.08, wall, -hz], [s * hx - 0.08, ridge - 0.04, 0]], C.wood, 0, ins);
+    mb.box(hx + 0.12, 0.62, 0, 0.12, 0.05, 0.05, C.woodDark); // axle
+    return { height: ridge, wheel: { at: [hx + 0.3, 0.62, 0], r: 0.5 } };
+  },
+};
+function wheelMesh() {
+  const mb = new MeshBuilder();
+  mb.frustum(0, 0, -0.07, 0.07, 0.5, 0.5, 14, C.wood, 0, 0, false);
+  mb.frustum(0, 0, -0.08, 0.08, 0.1, 0.1, 8, C.woodDark);
+  for (let k = 0; k < 8; k++) {
+    const a = k / 8 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+    mb.poly([[c * 0.1, -0.09, s * 0.1], [c * 0.6, -0.09, s * 0.6], [c * 0.6, 0.09, s * 0.6], [c * 0.1, 0.09, s * 0.1]], C.woodDark, 0, [c * 0.35 + s, 0, s * 0.35 - c]);
+  }
+  return mb;
+}
+
+// ---------- world mesh for a level ----------
+function faceFrame(f) { const F = FACES[f]; return { o: v3.scale(F.n, H), X: F.u, Y: F.n, Z: v3.cross(F.u, F.n) }; }
+
+function buildWorld(L, seed) {
+  const rnd = mulberry(seed);
+  const mb = new MeshBuilder();
+  const tall = (c) => (c === '#' || isBuildingChar(c) ? 1 : c === 'T' ? 0.5 : 0);
+  for (let f = 0; f < 6; f++) {
+    const fr = faceFrame(f); mb.setFrame(fr.o, fr.X, fr.Y, fr.Z);
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const c = L.at(f, i, j), x = tileU(i), z = -tileV(j);
+      if (c === '~') {
+        mb.poly([[x - 0.5, -0.07, z - 0.5], [x - 0.5, -0.07, z + 0.5], [x + 0.5, -0.07, z + 0.5], [x + 0.5, -0.07, z - 0.5]], jitter(C.water, 0.03, rnd), 1, [x, -1, z]);
+        for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          if (L.ufChar(f, i + di, j + dj) === '~') continue;
+          const ex = x + di * 0.5, ez = z + dj * 0.5;
+          const a = dj === 0 ? [[ex, 0, z - 0.5], [ex, 0, z + 0.5], [ex, -0.07, z + 0.5], [ex, -0.07, z - 0.5]] : [[x - 0.5, 0, ez], [x + 0.5, 0, ez], [x + 0.5, -0.07, ez], [x - 0.5, -0.07, ez]];
+          mb.poly(a, C.bank, 0, [ex + di, -0.03, ez + dj]);
+        }
+        continue;
+      }
+      // floor with soft corner shading
+      let base = isSolidChar(c) ? (c === '#' ? C.earth : C.paving) : ((i + j) % 2 ? C.grass : C.grass2);
+      base = jitter(base, 0.035, rnd);
+      const cols = [], pts = [];
+      for (const [ci, cj] of [[0, 0], [0, 1], [1, 1], [1, 0]]) {
+        const si = ci ? 1 : -1, sj = cj ? 1 : -1;
+        const occ = tall(L.ufChar(f, i + si, j)) + tall(L.ufChar(f, i, j + sj)) + tall(L.ufChar(f, i + si, j + sj));
+        cols.push(shade(base, 1 - 0.11 * Math.min(occ, 2.5)));
+        pts.push([-H + i + ci, 0, j + cj - H]);
+      }
+      mb.poly(pts, base, 0, [x, -1, z], cols);
+      if (c === '#') {
+        for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) {
+          const hx = 0.25 - 0.018 - rnd() * 0.022, hz = 0.25 - 0.018 - rnd() * 0.022, h = 0.4 + rnd() * 0.2;
+          const cx = x + (a - 0.5) * 0.5 + (rnd() - 0.5) * 0.02, cz = z + (b - 0.5) * 0.5 + (rnd() - 0.5) * 0.02;
+          mb.box(cx, h / 2, cz, hx, h / 2, hz, jitter(rnd() < 0.55 ? C.stone : C.stoneDark, 0.07, rnd));
+        }
+      } else if (c === 'T') {
+        const s = 0.86 + rnd() * 0.28, ox = x + (rnd() - 0.5) * 0.1, oz = z + (rnd() - 0.5) * 0.1, r = rnd() * 6.3;
+        mb.box(ox, 0.1 * s, oz, 0.05, 0.1 * s, 0.05, C.trunk);
+        mb.frustum(ox, oz, 0.14 * s, 0.62 * s, 0.34 * s, 0, 7, jitter(C.pine, 0.06, rnd), 0, r);
+        mb.frustum(ox, oz, 0.44 * s, 0.92 * s, 0.27 * s, 0, 7, jitter(C.pine, 0.06, rnd), 0, r + 0.4);
+        mb.frustum(ox, oz, 0.72 * s, 1.18 * s, 0.19 * s, 0, 7, jitter(C.pineTop, 0.05, rnd), 0, r + 0.8);
+      } else if (c === '@') {
+        mb.frustum(x, z, 0, 0.035, 0.38, 0.35, 12, C.slab);
+      } else if (isDoorChar(c)) {
+        mb.box(x, 0.022, z, 0.43, 0.022, 0.43, C.slab);
+      }
+    }
+  }
+  const world = { mesh: mb, buildings: [], doors: [] };
+  for (const b of L.buildings) {
+    const F = FACES[b.f];
+    const Z = v3.add(v3.scale(F.u, b.face[0]), v3.scale(F.v, b.face[1]));
+    const Y = F.n, X = v3.cross(Y, Z);
+    const alongU = b.face[0] !== 0;
+    const ext = [b.i1 - b.i0 + 1, b.j1 - b.j0 + 1];
+    const W = alongU ? ext[1] : ext[0], D = alongU ? ext[0] : ext[1];
+    const o = facePoint(b.f, b.cu, b.cv);
+    const bm = new MeshBuilder().setFrame(o, X, Y, Z);
+    const info = MODELS[b.id](bm, W, D);
+    const entry = { b, mesh: bm, height: info.height, top: v3.add(o, v3.scale(Y, info.height + 0.75)), frame: { X, Y, Z, o } };
+    if (info.wheel) {
+      const w = info.wheel, c = v3.add(o, v3.add(v3.add(v3.scale(X, w.at[0]), v3.scale(Y, w.at[1])), v3.scale(Z, w.at[2])));
+      entry.wheel = { center: c, Xw: Y, Yw: X, Zw: v3.cross(Y, X) };
+    }
+    world.buildings.push(entry);
+    // door ring
+    const dfr = faceFrame(b.door.f);
+    const rm = new MeshBuilder().setFrame(dfr.o, dfr.X, dfr.Y, dfr.Z);
+    const dx = tileU(b.door.i), dz = -tileV(b.door.j), segs = 20;
+    for (let k = 0; k < segs; k++) {
+      const a0 = k / segs * Math.PI * 2, a1 = (k + 1) / segs * Math.PI * 2;
+      rm.poly([[dx + Math.cos(a0) * 0.27, 0.05, dz + Math.sin(a0) * 0.27], [dx + Math.cos(a0) * 0.37, 0.05, dz + Math.sin(a0) * 0.37], [dx + Math.cos(a1) * 0.37, 0.05, dz + Math.sin(a1) * 0.37], [dx + Math.cos(a1) * 0.27, 0.05, dz + Math.sin(a1) * 0.27]], C.teal, 2, [dx, -1, dz]);
+    }
+    world.doors.push({ b, mesh: rm });
+  }
+  return world;
+}
+
+function markerMesh() {
+  const mb = new MeshBuilder(), r = 0.26, h = 0.4;
+  const ring = [[r, 0, 0], [0, 0, r], [-r, 0, 0], [0, 0, -r]];
+  for (let k = 0; k < 4; k++) {
+    const a = ring[k], b = ring[(k + 1) % 4];
+    mb.poly([a, b, [0, h, 0]], C.teal, 2, [0, 0, 0]);
+    mb.poly([b, a, [0, -h, 0]], shade(C.teal, 0.8), 2, [0, 0, 0]);
+  }
+  return mb;
+}
+function ballMesh() {
+  return new MeshBuilder().sphere(BALL_R, 28, 18, (n) => (Math.abs(n[1]) < 0.2 || Math.abs(n[0]) < 0.13 ? C.ballB : C.ballA), 4);
+}
+
+// ---------- DOM ----------
+const $ = (id) => document.getElementById(id);
+const els = {
+  stage: $('stage'), bg: $('bg'), gl: $('gl'), hud: $('hud'), controls: $('controls'), title: $('title'), done: $('done'),
+  toast: $('toast'), hint: $('hint'), chips: $('chips'), time: $('time'), lvlNum: $('lvlNum'), lvlName: $('lvlName'),
+  levels: $('levels'), nogl: $('nogl'),
+};
+
+// ---------- sound (synthesised, starts after the first tap) ----------
+const audio = {
+  ctx: null, lastBump: 0,
+  init() { if (this.ctx) return; try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { this.ctx = null; } },
+  tone(freq, dur, type = 'sine', gain = 0.12, when = 0) {
+    if (!this.ctx || save.muted) return;
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain(), t0 = c.currentTime + when;
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(gain, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+  },
+  chime() { this.tone(784, 0.5, 'sine', 0.12); this.tone(1175, 0.7, 'sine', 0.09, 0.09); },
+  fanfare() { [523, 659, 784, 1047].forEach((f, k) => this.tone(f, 0.55, 'triangle', 0.08, k * 0.11)); },
+  bump(v) {
+    if (!this.ctx || save.muted) return;
+    const now = performance.now(); if (now - this.lastBump < 70) return; this.lastBump = now;
+    this.tone(150 + Math.random() * 40, 0.06, 'triangle', Math.min(0.14, v * 0.025));
+  },
+  splash() {
+    if (!this.ctx || save.muted) return;
+    const c = this.ctx, len = Math.floor(c.sampleRate * 0.45), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
+    const s = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = buf; fl.type = 'lowpass'; fl.frequency.setValueAtTime(2400, c.currentTime); fl.frequency.exponentialRampToValueAtTime(300, c.currentTime + 0.4);
+    g.gain.value = 0.22; s.connect(fl).connect(g).connect(c.destination); s.start();
+  },
+};
+const buzz = (ms) => { try { navigator.vibrate?.(ms); } catch { /* not allowed here */ } };
+
+// ---------- state ----------
+let R = null, world = null, gpu = null, game = null, level = null, levelIndex = 0;
+let Q = q.ident(), Q0 = q.ident(), anim = null, screen = 'title';
+let ballQ = q.ident(), visOff = [0, 0, 0], lastBallPos = null, respawnT = 1;
+let camShift = 0.36, camZoom = 1.18, camEl = 0.6, demo = false, autopilot = null, timeScale = 1;
+let toastTimer = 0, completeTimer = -1, idleSpin = 0, sharedMeshes = null;
+const keys = new Set();
+
+function startLevel(k, toScreen = 'play') {
+  levelIndex = k;
+  level = parseLevel(LEVELS[k]);
+  game = new Game(level);
+  if (gpu) { R.free(gpu.world); gpu.buildings.forEach((x) => R.free(x)); gpu.doors.forEach((x) => R.free(x)); }
+  world = buildWorld(level, 1000 + k * 77);
+  gpu = { world: R.upload(world.mesh), buildings: world.buildings.map((e) => R.upload(e.mesh)), doors: world.doors.map((d) => R.upload(d.mesh)) };
+  const sn = FACES[level.start.f].n;
+  Q0 = q.mul(q.axis([1, 0, 0], 0.0), q.fromTo(sn, [0, 1, 0]));
+  Q = Q0.slice(); anim = null; ballQ = q.ident(); visOff = [0, 0, 0]; lastBallPos = null; respawnT = 1;
+  autopilot = makeAutopilot(game, { speed: 2.0 });
+  completeTimer = -1; toastTimer = 0; els.toast.hidden = true;
+  setScreen(toScreen);
+  renderHud();
+}
+
+function setScreen(s) {
+  screen = s;
+  els.title.hidden = s !== 'title';
+  els.done.hidden = s !== 'done';
+  els.hud.hidden = s !== 'play';
+  els.controls.hidden = s !== 'play';
+  els.hint.hidden = !(s === 'play' && game && game.phase === 'ready' && !demo);
+  if (s !== 'play') { els.toast.hidden = true; toastTimer = 0; }
+  if (s === 'title') renderTitle();
+  if (s === 'play') { requestWake(); placeToast(); }
+}
+
+let wakeLock = null;
+async function requestWake() { try { if (!wakeLock && navigator.wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch { wakeLock = null; } }
+
+// ---------- HUD / screens ----------
+const fmtTime = (s) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r < 10 ? '0' : ''}${r.toFixed(1)}`; };
+const levelName = (k) => LEVELS[k].name[lang];
+const isUnlocked = (k) => k === 0 || !!save.done[LEVELS[k - 1].key];
+
+function renderHud() {
+  els.lvlNum.textContent = String(levelIndex + 1);
+  els.lvlName.textContent = levelName(levelIndex);
+  els.chips.innerHTML = '';
+  for (const b of level.buildings) {
+    const li = document.createElement('li');
+    li.className = 'chip' + (game.visited.has(b.letter) ? ' is-done' : '');
+    li.innerHTML = `<span class="chip-dot" aria-hidden="true"></span><span></span>`;
+    li.lastChild.textContent = b.name[lang];
+    els.chips.appendChild(li);
+  }
+  els.time.textContent = fmtTime(game.time);
+  $('btnSpinL').setAttribute('aria-label', t('spinL'));
+  $('btnSpinR').setAttribute('aria-label', t('spinR'));
+  $('btnFlat').textContent = t('flat'); $('btnFlat').setAttribute('aria-label', t('flatLabel'));
+  $('btnRestart').setAttribute('aria-label', t('restart'));
+  $('btnMenu').setAttribute('aria-label', t('menu'));
+  updateSoundBtn();
+  $('hintText').textContent = t('hint');
+  $('hintGoal').textContent = t('goal');
+  if (screen === 'play') placeToast();
+}
+function placeToast() {
+  requestAnimationFrame(() => { const r = els.hud.getBoundingClientRect(); if (r.height) els.stage.style.setProperty('--hud-bottom', `${Math.round(r.bottom + 10)}px`); });
+}
+function updateSoundBtn() {
+  const b = $('btnSound');
+  b.setAttribute('aria-label', save.muted ? t('soundOff') : t('soundOn'));
+  b.classList.toggle('is-muted', !!save.muted);
+}
+const starRow = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
+
+function renderTitle() {
+  $('tagline').textContent = t('tagline');
+  $('note').textContent = t('note');
+  $('keys').textContent = t('keys');
+  document.documentElement.lang = lang === 'me' ? 'sr-Latn-ME' : 'en';
+  document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+  els.levels.innerHTML = '';
+  LEVELS.forEach((L, k) => {
+    const rec = save.done[L.key], open = isUnlocked(k);
+    const btn = document.createElement('button');
+    btn.className = 'tablet' + (k === levelIndex ? ' is-current' : '') + (open ? '' : ' is-locked');
+    btn.disabled = !open;
+    btn.innerHTML = `<span class="tablet-num"></span><span class="tablet-name"></span><span class="tablet-meta"></span>`;
+    btn.children[0].textContent = String(k + 1);
+    btn.children[1].textContent = L.name[lang];
+    btn.children[2].textContent = !open ? t('locked') : rec ? `${starRow(rec.stars)} · ${rec.best.toFixed(1)} s` : starRow(0);
+    btn.setAttribute('aria-label', `${t('level')} ${k + 1}: ${L.name[lang]}. ${btn.children[2].textContent}`);
+    btn.addEventListener('click', () => { levelIndex = k; startLevel(k, 'title'); });
+    els.levels.appendChild(btn);
+  });
+  $('btnPlay').textContent = `${t('play')} · ${t('level')} ${levelIndex + 1}`;
+}
+
+function showToast(name, meta, text, ms = 3200) {
+  $('toastName').textContent = name; $('toastMeta').textContent = meta; $('toastText').textContent = text || '';
+  $('toastText').hidden = !text;
+  els.toast.hidden = false;
+  els.toast.classList.remove('is-in'); void els.toast.offsetWidth; els.toast.classList.add('is-in');
+  toastTimer = ms / 1000;
+}
+
+function showDone(time) {
+  const L = LEVELS[levelIndex], par = PARS[L.key], s = stars(time, par);
+  const prev = save.done[L.key];
+  const isBest = !prev || time < prev.best;
+  save.done[L.key] = { best: isBest ? time : prev.best, stars: Math.max(s, prev ? prev.stars : 0) };
+  writeSave();
+  $('doneLevel').textContent = `${t('level')} ${levelIndex + 1} · ${L.name[lang]}`;
+  $('doneTitle').textContent = t('complete');
+  $('doneStars').textContent = starRow(s);
+  $('doneStars').setAttribute('aria-label', `${s} / 3`);
+  $('doneTimeLabel').textContent = t('time'); $('doneBestLabel').textContent = t('best');
+  $('doneTime').textContent = `${time.toFixed(1)} s`;
+  $('doneBest').textContent = `${save.done[L.key].best.toFixed(1)} s`;
+  $('doneNew').hidden = !(isBest && prev);
+  $('doneNew').textContent = t('newBest');
+  $('donePar').textContent = t('par').replace('{par}', String(par));
+  const last = levelIndex === LEVELS.length - 1;
+  $('btnNext').hidden = last;
+  $('doneAll').hidden = !last; $('doneAll').textContent = t('allDone');
+  $('btnNext').textContent = t('next'); $('btnAgain').textContent = t('again'); $('btnLevels').textContent = t('levels');
+  setScreen('done');
+  (last ? $('btnAgain') : $('btnNext')).focus({ preventScroll: true });
+}
+
+// ---------- events from the game ----------
+function handleEvents(ev) {
+  for (const e of ev) {
+    if (e.type === 'visit') {
+      audio.chime(); buzz(25);
+      showToast(e.building.name[lang], `${t('visited')} ${e.count}/${e.total}`, t('stub'));
+      renderHud();
+    } else if (e.type === 'complete') {
+      audio.fanfare(); buzz([30, 60, 30]);
+      completeTimer = 1.1;
+    } else if (e.type === 'sink') {
+      audio.splash(); buzz(70);
+      showToast(t('splash'), '', '', 1600);
+    } else if (e.type === 'respawn') {
+      respawnT = 0; lastBallPos = null;
+    } else if (e.type === 'bump') {
+      audio.bump(e.speed);
+      if (e.speed > 3) buzz(12);
+    }
+  }
+}
+
+// ---------- input ----------
+const K_DRAG = 0.0062;
+function tiltBy(dx, dy) {
+  Q = q.norm(q.mul(q.axis([1, 0, 0], dy * K_DRAG), Q));
+  Q = q.norm(q.mul(q.axis([0, 0, 1], -dx * K_DRAG), Q));
+  anim = null;
+  if (screen === 'play' && game.phase === 'ready' && !demo) { game.begin(); els.hint.hidden = true; }
+}
+function animateTo(target, dur = 0.34) { anim = { from: Q.slice(), to: target, t: 0, dur }; if (screen === 'play' && game.phase === 'ready') { game.begin(); els.hint.hidden = true; } }
+function spin(dir) { animateTo(q.mul(q.axis([0, 1, 0], dir * Math.PI / 2), anim ? anim.to : Q)); }
+function levelBallFace() {
+  const nW = q.rot(Q, FACES[game.ball.f].n);
+  animateTo(q.norm(q.mul(q.fromTo(nW, [0, 1, 0]), Q)), 0.3);
+}
+
+let dragId = null, lx = 0, ly = 0;
+els.gl.addEventListener('pointerdown', (e) => {
+  if (screen !== 'play' || dragId !== null) return;
+  dragId = e.pointerId; lx = e.clientX; ly = e.clientY;
+  try { els.gl.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+  audio.init();
+});
+els.gl.addEventListener('pointermove', (e) => {
+  if (e.pointerId !== dragId) return;
+  const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
+  if (dx || dy) tiltBy(dx, dy);
+});
+const endDrag = (e) => { if (e.pointerId === dragId) dragId = null; };
+els.gl.addEventListener('pointerup', endDrag);
+els.gl.addEventListener('pointercancel', endDrag);
+window.addEventListener('keydown', (e) => {
+  if (screen !== 'play') return;
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { keys.add(e.key); e.preventDefault(); }
+  else if (e.key === 'q' || e.key === 'Q') spin(1);
+  else if (e.key === 'e' || e.key === 'E') spin(-1);
+  else if (e.key === ' ') { levelBallFace(); e.preventDefault(); }
+});
+window.addEventListener('keyup', (e) => keys.delete(e.key));
+window.addEventListener('blur', () => keys.clear());
+
+$('btnSpinL').addEventListener('click', () => spin(1));
+$('btnSpinR').addEventListener('click', () => spin(-1));
+$('btnFlat').addEventListener('click', levelBallFace);
+$('btnRestart').addEventListener('click', () => startLevel(levelIndex, 'play'));
+$('btnMenu').addEventListener('click', () => setScreen('title'));
+$('btnSound').addEventListener('click', () => { audio.init(); save.muted = !save.muted; writeSave(); updateSoundBtn(); });
+$('btnPlay').addEventListener('click', () => { audio.init(); startLevel(levelIndex, 'play'); });
+$('btnNext').addEventListener('click', () => { startLevel(Math.min(levelIndex + 1, LEVELS.length - 1), 'play'); });
+$('btnAgain').addEventListener('click', () => startLevel(levelIndex, 'play'));
+$('btnLevels').addEventListener('click', () => { setScreen('title'); });
+document.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => {
+  lang = b.dataset.lang; save.lang = lang; writeSave(); renderTitle(); renderHud();
+}));
+
+// ---------- backdrop: Prokletije ridges ----------
+function drawBackdrop() {
+  const c = els.bg, dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.max(1, Math.round(c.clientWidth * dpr)), h = Math.max(1, Math.round(c.clientHeight * dpr));
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  const sky = g.createLinearGradient(0, 0, 0, h);
+  sky.addColorStop(0, '#9dbcd4'); sky.addColorStop(0.55, '#cfdde5'); sky.addColorStop(1, '#e6ece6');
+  g.fillStyle = sky; g.fillRect(0, 0, w, h);
+  const rnd = mulberry(7);
+  const layers = [
+    { y: 0.6, amp: 0.2, col: '#bccbd6', snow: true, jag: 1 },
+    { y: 0.68, amp: 0.13, col: '#9fb3c1', jag: 0.8 },
+    { y: 0.79, amp: 0.08, col: '#7d988f', jag: 0.5 },
+    { y: 0.88, amp: 0.05, col: '#5d7f6e', jag: 0.3 },
+  ];
+  for (const L of layers) {
+    const ph = [rnd() * 6, rnd() * 6, rnd() * 6, rnd() * 6], pts = [];
+    const steps = 140;
+    for (let s = 0; s <= steps; s++) {
+      const x = s / steps;
+      let y = Math.sin(x * 2.3 + ph[0]) * 0.35 + Math.sin(x * 5.9 + ph[1]) * 0.2;
+      y += Math.pow(1 - Math.abs(Math.sin(x * 9.4 + ph[2])), 2.2) * 0.75 * L.jag;
+      y += Math.pow(1 - Math.abs(Math.sin(x * 23.7 + ph[3])), 3) * 0.22 * L.jag + Math.sin(x * 61 + ph[0]) * 0.03 * L.jag;
+      pts.push([x * w, (L.y - y * L.amp) * h]);
+    }
+    g.beginPath(); g.moveTo(0, h); pts.forEach(([x, y]) => g.lineTo(x, y)); g.lineTo(w, h); g.closePath();
+    g.fillStyle = L.col; g.fill();
+    if (L.snow) {
+      g.save(); g.clip();
+      const top = Math.min(...pts.map((p) => p[1]));
+      const sg = g.createLinearGradient(0, top, 0, top + h * 0.09);
+      sg.addColorStop(0, 'rgba(255,255,255,0.75)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = sg; g.fillRect(0, top, w, h * 0.1); g.restore();
+    }
+  }
+}
+
+// ---------- render loop ----------
+let vpW = 0, vpH = 0;
+function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  vpW = Math.max(1, Math.round(els.gl.clientWidth * dpr)); vpH = Math.max(1, Math.round(els.gl.clientHeight * dpr));
+  els.gl.width = vpW; els.gl.height = vpH;
+  drawBackdrop();
+}
+
+function camera() {
+  const aspect = vpW / vpH, fovy = aspect < 1 ? 46 * Math.PI / 180 : 38 * Math.PI / 180;
+  const fovx = 2 * Math.atan(Math.tan(fovy / 2) * aspect);
+  const half = Math.min(fovy, fovx) / 2;
+  const dist = (8.4 / Math.sin(half)) * camZoom, el = camEl;
+  const eye = [0, Math.sin(el) * dist, Math.cos(el) * dist];
+  const P = m4.perspective(fovy, aspect, 1, dist * 3);
+  const shift = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, camShift, 0, 1]);
+  return { eye, vp: m4.mul(shift, m4.mul(P, m4.lookAt(eye, [0, 0, 0], [0, 1, 0]))) };
+}
+
+let last = performance.now(), clock = 0;
+function frame(now) {
+  const real = Math.min(0.05, (now - last) / 1000); last = now;
+  const dt = real * timeScale;
+  clock += real;
+
+  // camera framing per screen
+  const play = screen === 'play';
+  const wantShift = play ? -0.07 : 0.34, wantZoom = play ? 0.97 : 1.2, wantEl = (play ? 47 : 34) * Math.PI / 180;
+  const k = 1 - Math.exp(-real * 5);
+  camShift += (wantShift - camShift) * k; camZoom += (wantZoom - camZoom) * k; camEl += (wantEl - camEl) * k;
+
+  // cube orientation
+  if (anim) {
+    anim.t += real / anim.dur;
+    const e = anim.t >= 1 ? 1 : 1 - Math.pow(1 - anim.t, 3);
+    Q = q.norm(q.slerp(anim.from, anim.to, e));
+    if (anim.t >= 1) anim = null;
+  }
+  if (screen === 'play' && keys.size) {
+    const s = 220 * real;
+    tiltBy((keys.has('ArrowRight') ? s : 0) - (keys.has('ArrowLeft') ? s : 0), (keys.has('ArrowDown') ? s : 0) - (keys.has('ArrowUp') ? s : 0));
+  }
+  if (screen !== 'play') { idleSpin = real * 0.25; Q = q.norm(q.mul(q.axis([0, 1, 0], idleSpin), Q)); }
+
+  // physics (in steps of at most 1/60 s)
+  let remaining = screen === 'play' ? dt : 0;
+  while (remaining > 1e-6) {
+    const h = Math.min(remaining, 1 / 60); remaining -= h;
+    if (demo && game.phase !== 'done') {
+      game.begin(); els.hint.hidden = true;
+      const gTarget = autopilot(h);
+      const gw = q.rot(Q, gTarget);
+      const turn = q.fromTo(gw, [0, -1, 0]);
+      Q = q.norm(q.mul(q.slerp(q.ident(), turn, Math.min(1, h * 9)), Q));
+    }
+    const gL = q.rot(q.conj(Q), [0, -1, 0]);
+    const prevF = game.ball.f;
+    const before = facePoint(game.ball.f, game.ball.u, game.ball.v, BALL_R);
+    const ev = game.update(h, gL);
+    if (game.ball.f !== prevF && game.phase === 'play') {
+      const after = facePoint(game.ball.f, game.ball.u, game.ball.v, BALL_R);
+      visOff = v3.add(visOff, v3.sub(before, after));
+    }
+    // rolling
+    const b = game.ball, F = FACES[b.f];
+    const vel = v3.add(v3.scale(F.u, b.vu), v3.scale(F.v, b.vv)), sp = v3.len(vel);
+    if (sp > 1e-4 && game.phase === 'play') ballQ = q.norm(q.mul(q.axis(v3.norm(v3.cross(F.n, vel)), sp * h / BALL_R), ballQ));
+    handleEvents(ev);
+  }
+  visOff = v3.scale(visOff, Math.exp(-real * 22));
+  if (respawnT < 1) respawnT = Math.min(1, respawnT + real / 0.28);
+  if (completeTimer > 0) { completeTimer -= real; if (completeTimer <= 0) showDone(game.time); }
+  if (toastTimer > 0) { toastTimer -= real; if (toastTimer <= 0) els.toast.hidden = true; }
+  if (screen === 'play') els.time.textContent = fmtTime(game.time);
+
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function draw() {
+  const { eye, vp } = camera();
+  const sun = v3.norm([-0.45, 0.82, 0.38]);
+  R.begin(vpW, vpH, vp, eye, sun, clock);
+  const cube = m4.fromQ(Q);
+  R.draw(gpu.world, cube);
+  world.buildings.forEach((e, i) => {
+    const done = game.visited.has(e.b.letter);
+    R.draw(gpu.buildings[i], cube, { tint: done ? [0.98, 0.82, 0.45, 0.12] : [0, 0, 0, 0] });
+    if (e.wheel) {
+      const w = e.wheel;
+      const m = m4.mul(cube, m4.mul(m4.basis(w.Xw, w.Yw, w.Zw, w.center), m4.fromQ(q.axis([0, 1, 0], -clock * 1.6))));
+      R.draw(sharedMeshes.wheel, m);
+    }
+  });
+  const pulse = 0.35 + 0.25 * Math.sin(clock * 4);
+  world.doors.forEach((d, i) => {
+    const done = game.visited.has(d.b.letter);
+    R.draw(gpu.doors[i], cube, { tint: done ? GOLD : TEAL, glow: done ? 0.25 : pulse });
+  });
+
+  // ball
+  const b = game.ball, F = FACES[b.f];
+  let sink = 0, scale = 1;
+  if (game.phase === 'sink') sink = Math.min(1, game.sinkT / 0.5);
+  if (respawnT < 1) scale = 0.4 + 0.6 * (1 - Math.pow(1 - respawnT, 3));
+  const pos = v3.add(v3.add(facePoint(b.f, b.u, b.v, BALL_R - sink * 0.62), visOff), [0, 0, 0]);
+  const ballM = m4.mul(cube, m4.fromQ(ballQ, pos, scale));
+  if (game.phase !== 'sink' || sink < 1) R.draw(sharedMeshes.ball, ballM);
+
+  // markers above unvisited buildings
+  world.buildings.forEach((e) => {
+    if (game.visited.has(e.b.letter)) return;
+    const bob = Math.sin(clock * 2.2 + e.height) * 0.12;
+    const p = v3.add(e.top, v3.scale(e.frame.Y, bob));
+    const m = m4.mul(cube, m4.mul(m4.basis(e.frame.X, e.frame.Y, e.frame.Z, p), m4.fromQ(q.axis([0, 1, 0], clock * 1.4))));
+    R.draw(sharedMeshes.marker, m, { tint: TEAL, glow: 0.35 });
+  });
+
+  // soft contact shadow
+  if (game.phase !== 'sink') {
+    const sp = facePoint(b.f, b.u, b.v, 0.012), Z = v3.cross(F.u, F.n);
+    R.draw(sharedMeshes.blob, m4.mul(cube, m4.basis(F.u, F.n, Z, v3.add(sp, visOff))), { depthWrite: false, alpha: scale });
+  }
+  // ghost ball when its face points away from the camera
+  const nW = q.rot(Q, F.n), pW = q.rot(Q, pos), toCam = v3.norm(v3.sub(eye, pW));
+  if (v3.dot(nW, toCam) < 0.08 && game.phase !== 'sink') R.draw(sharedMeshes.ball, ballM, { alpha: 0.4, depthTest: false, depthWrite: false, tint: [0.06, 0.55, 0.55, 0.35] });
+}
+
+// ---------- boot ----------
+function boot(data = {}) {
+  try { R = new Renderer(els.gl); } catch (err) {
+    els.nogl.hidden = false; els.nogl.textContent = t('noGL'); els.title.hidden = true; return;
+  }
+  sharedMeshes = { ball: R.upload(ballMesh()), marker: R.upload(markerMesh()), blob: R.upload(new MeshBuilder().blob(0.44, 0.34)), wheel: R.upload(wheelMesh()) };
+  resize();
+  window.addEventListener('resize', resize);
+  demo = location.hash === '#demo';
+  const first = Number.isInteger(data.level) ? data.level : LEVELS.findIndex((L, k) => isUnlocked(k) && !save.done[L.key]);
+  startLevel(Math.max(0, first === -1 ? 0 : first), demo ? 'play' : 'title');
+  requestAnimationFrame((ts) => { last = ts; frame(ts); });
+  try { window.claude?.hot?.snapshot?.(() => ({ level: levelIndex })); } catch { /* optional host hook */ }
+}
+window.__gk = {
+  get game() { return game; }, get screen() { return screen; }, get Q() { return Q; },
+  startLevel, setDemo(v) { demo = v; }, setTimeScale(v) { timeScale = v; },
+  tilt: tiltBy,
+};
+if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});
+
+</script>
+
+</body></html>

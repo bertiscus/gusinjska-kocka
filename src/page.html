@@ -1,0 +1,264 @@
+<title>Gusinjska kocka</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Marcellus&display=swap">
+<style>
+/* Layout: a full-screen 3D stage. The HUD floats over it; menus are cards anchored
+   low so the cube and the Prokletije ridges stay visible above them.
+   One deliberate daylight look for both host themes. */
+:root {
+  --mist: #e3eae5;
+  --ink: #1a2928;
+  --ink-2: #4b5d5b;
+  --panel: rgba(246, 248, 245, 0.9);
+  --panel-solid: #f5f7f4;
+  --line: rgba(26, 41, 40, 0.14);
+  --accent: #0b7b77;
+  --accent-ink: #ffffff;
+  --gold: #c08a1c;
+  --stele: #e8ebe5;
+  --display: 'Marcellus', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --ui: 'Golos Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; background: var(--mist); color: var(--ink); font-family: var(--ui); -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#stage { position: fixed; inset: 0; overflow: hidden; user-select: none; -webkit-user-select: none; }
+#bg, #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#gl { touch-action: none; cursor: grab; }
+#gl:active { cursor: grabbing; }
+
+/* ---------- HUD ---------- */
+.hud {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 8px; pointer-events: none;
+}
+.hud > * { pointer-events: auto; }
+.bar { display: flex; align-items: center; gap: 10px; }
+.lvl { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; font-family: var(--display); font-size: 1.45rem; line-height: 1.1; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
+.lvl > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lvl-num { flex: none; display: grid; place-items: center; width: 30px; height: 34px; border-radius: 15px 15px 5px 5px; background: var(--stele); border: 1px solid var(--line); font-size: 1.05rem; }
+.time { flex: none; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.95rem; background: var(--panel); border: 1px solid var(--line); padding: 7px 12px; border-radius: 999px; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px 5px 7px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 0.8rem; font-weight: 500; }
+.chip-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--accent); box-sizing: border-box; }
+.chip.is-done { color: var(--ink-2); }
+.chip.is-done .chip-dot { background: var(--gold); border-color: var(--gold); }
+
+.ibtn {
+  width: 46px; height: 46px; flex: none; display: grid; place-items: center; padding: 0; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 50%;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 4px 14px rgba(26, 41, 40, 0.12);
+}
+.ibtn svg { width: 22px; height: 22px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ibtn:active { transform: translateY(1px); }
+.ibtn .off { display: none; }
+.ibtn.is-muted .on { display: none; }
+.ibtn.is-muted .off { display: inline; }
+
+.controls {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; align-items: center; justify-content: center; gap: 10px; pointer-events: none;
+}
+.controls > * { pointer-events: auto; }
+.controls .gap { flex: 0 1 18px; }
+.pill {
+  height: 46px; padding: 0 20px; cursor: pointer; font-weight: 600; font-size: 0.95rem; color: var(--accent);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 4px 14px rgba(26, 41, 40, 0.12);
+}
+
+/* ---------- toast and hint ---------- */
+.toast {
+  position: absolute; left: 50%; top: var(--hud-bottom, calc(env(safe-area-inset-top, 0px) + 104px));
+  width: min(340px, calc(100% - 32px)); transform: translateX(-50%);
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px 13px;
+  box-shadow: 0 10px 30px rgba(26, 41, 40, 0.18); pointer-events: none; display: grid; gap: 3px;
+}
+.toast.is-in { animation: toast-in 0.32s cubic-bezier(.2, .9, .3, 1.2); }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, -10px) scale(0.97); } }
+.toast-meta { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.toast-name { font-family: var(--display); font-size: 1.25rem; line-height: 1.15; }
+.toast-text { font-size: 0.82rem; color: var(--ink-2); line-height: 1.4; }
+
+.hint {
+  position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); transform: translateX(-50%);
+  width: min(330px, calc(100% - 32px)); display: grid; grid-template-columns: 54px 1fr; gap: 12px; align-items: center;
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; pointer-events: none;
+  box-shadow: 0 10px 30px rgba(26, 41, 40, 0.16);
+}
+.hint p { margin: 0; font-size: 0.86rem; line-height: 1.4; }
+.hint p + p { color: var(--ink-2); margin-top: 3px; }
+.finger { position: relative; width: 54px; height: 54px; border-radius: 12px; background: var(--stele); overflow: hidden; }
+.finger::before { content: ""; position: absolute; left: 11px; top: 11px; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgba(11, 123, 119, 0.2); animation: swipe 1.8s ease-in-out infinite; }
+@keyframes swipe { 0%, 15% { transform: translate(0, 0); } 55%, 70% { transform: translate(16px, 16px); } 100% { transform: translate(0, 0); } }
+
+/* ---------- menus ---------- */
+.screen {
+  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.card {
+  pointer-events: auto; position: relative; width: 100%; max-width: 440px; margin: 0 auto; box-sizing: border-box;
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 20px; padding: 20px 20px 18px;
+  box-shadow: 0 18px 50px rgba(26, 41, 40, 0.22); display: grid; gap: 14px;
+  max-height: calc(100% - 8px); overflow-y: auto;
+}
+.eyebrow { margin: 0; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.card h1, .card h2 { margin: 0; font-family: var(--display); font-weight: 400; line-height: 1.02; text-wrap: balance; }
+.card h1 { font-size: clamp(2.2rem, 10vw, 2.8rem); letter-spacing: 0.005em; }
+.card h2 { font-size: 2.4rem; }
+.head { display: grid; gap: 6px; }
+.tagline { margin: 0; font-size: 0.98rem; line-height: 1.45; color: var(--ink-2); max-width: 34ch; }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lang { flex: none; display: flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.lang button { border: 0; background: transparent; padding: 6px 11px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; cursor: pointer; color: var(--ink-2); }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--panel-solid); }
+
+.levels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tablet {
+  display: grid; justify-items: center; gap: 2px; padding: 12px 6px 10px; cursor: pointer; min-width: 0;
+  background: linear-gradient(180deg, #f1f3ee, var(--stele)); border: 1px solid var(--line);
+  border-radius: 36px 36px 10px 10px / 26px 26px 10px 10px;
+}
+.tablet.is-current { border: 2px solid var(--accent); padding: 11px 5px 9px; }
+.tablet:disabled { cursor: default; opacity: 0.5; }
+.tablet-num { font-family: var(--display); font-size: 1.6rem; line-height: 1.1; }
+.tablet-name { font-size: 0.8rem; font-weight: 600; text-align: center; overflow-wrap: anywhere; }
+.tablet-meta { font-size: 0.72rem; color: var(--gold); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+.tablet:disabled .tablet-meta { color: var(--ink-2); }
+
+.cta {
+  height: 52px; border: 0; border-radius: 14px; cursor: pointer; background: var(--accent); color: var(--accent-ink);
+  font-weight: 600; font-size: 1.05rem; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 6px 18px rgba(11, 123, 119, 0.3);
+}
+.cta:active { transform: translateY(1px); }
+.ghost { height: 46px; border-radius: 12px; cursor: pointer; background: transparent; border: 1px solid var(--line); font-weight: 600; font-size: 0.95rem; }
+.note { margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--ink-2); }
+.keys { margin: -8px 0 0; font-size: 0.74rem; color: var(--ink-2); }
+@media (hover: none) { .keys { display: none; } }
+
+.stars { font-size: 2.1rem; letter-spacing: 0.12em; color: var(--gold); line-height: 1; }
+.stats { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stats div { background: var(--stele); border-radius: 12px; padding: 9px 12px; }
+.stats dt { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); }
+.stats dd { margin: 2px 0 0; font-size: 1.3rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.badge { justify-self: start; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-ink); background: var(--gold); padding: 4px 9px; border-radius: 999px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.actions .cta { grid-column: 1 / -1; }
+
+.nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-left, 0px)); text-align: center; font-size: 1rem; }
+
+@media (min-width: 760px) and (min-height: 560px) {
+  .screen { justify-content: center; align-items: flex-end; }
+  .card { margin: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast.is-in, .finger::before { animation: none; }
+}
+</style>
+
+<div id="stage">
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <canvas id="gl" aria-label="3D cube"></canvas>
+
+  <header id="hud" class="hud" hidden>
+    <div class="bar">
+      <button id="btnMenu" class="ibtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>
+      </button>
+      <div class="lvl"><span class="lvl-num" id="lvlNum">1</span><span id="lvlName">Kula</span></div>
+      <div class="time" id="time" aria-live="off">0:00.0</div>
+    </div>
+    <ol class="chips" id="chips"></ol>
+  </header>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <div class="toast-meta" id="toastMeta"></div>
+    <div class="toast-name" id="toastName"></div>
+    <div class="toast-text" id="toastText"></div>
+  </div>
+
+  <div id="hint" class="hint" hidden>
+    <div class="finger" aria-hidden="true"></div>
+    <div><p id="hintText"></p><p id="hintGoal"></p></div>
+  </div>
+
+  <footer id="controls" class="controls" hidden>
+    <button id="btnSpinL" class="ibtn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7.2C5.2 8.1 3 9.9 3 12c0 2.8 4 5 9 5s9-2.2 9-5c0-1.8-1.6-3.3-4-4.2"/><path d="M11.5 4.5 8.4 7.2l3 2.6"/></svg>
+    </button>
+    <button id="btnFlat" class="pill" type="button">Poravnaj</button>
+    <button id="btnSpinR" class="ibtn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 7.2C18.8 8.1 21 9.9 21 12c0 2.8-4 5-9 5s-9-2.2-9-5c0-1.8 1.6-3.3 4-4.2"/><path d="M12.5 4.5l3.1 2.7-3 2.6"/></svg>
+    </button>
+    <span class="gap" aria-hidden="true"></span>
+    <button id="btnRestart" class="ibtn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5v4.6h4.6"/></svg>
+    </button>
+    <button id="btnSound" class="ibtn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="on" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4"/><path class="off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+    </button>
+  </footer>
+
+  <section id="title" class="screen" aria-labelledby="gameTitle">
+    <div class="card">
+      <div class="head">
+        <div class="top-row">
+          <p class="eyebrow">Xplore Prokletije</p>
+          <div class="lang" role="group" aria-label="Jezik / Language">
+            <button type="button" data-lang="me" aria-pressed="true">ME</button>
+            <button type="button" data-lang="en" aria-pressed="false">EN</button>
+          </div>
+        </div>
+        <h1 id="gameTitle">Gusinjska kocka</h1>
+        <p class="tagline" id="tagline"></p>
+      </div>
+      <div class="levels" id="levels"></div>
+      <button id="btnPlay" class="cta" type="button">Igraj</button>
+      <p class="note" id="note"></p>
+      <p class="keys" id="keys"></p>
+    </div>
+  </section>
+
+  <section id="done" class="screen" hidden aria-labelledby="doneTitle">
+    <div class="card">
+      <div class="head">
+        <p class="eyebrow" id="doneLevel"></p>
+        <h2 id="doneTitle"></h2>
+      </div>
+      <div class="stars" id="doneStars" role="img"></div>
+      <span class="badge" id="doneNew" hidden></span>
+      <dl class="stats">
+        <div><dt id="doneTimeLabel"></dt><dd id="doneTime"></dd></div>
+        <div><dt id="doneBestLabel"></dt><dd id="doneBest"></dd></div>
+      </dl>
+      <p class="note" id="donePar"></p>
+      <p class="note" id="doneAll" hidden></p>
+      <div class="actions">
+        <button id="btnNext" class="cta" type="button"></button>
+        <button id="btnAgain" class="ghost" type="button"></button>
+        <button id="btnLevels" class="ghost" type="button"></button>
+      </div>
+    </div>
+  </section>
+
+  <div id="nogl" class="nogl" hidden></div>
+</div>
+
+<script type="module">
+/*__SCRIPT__*/
+</script>
