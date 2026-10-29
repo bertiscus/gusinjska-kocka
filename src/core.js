@@ -67,7 +67,7 @@ export function fold(f, u, v, vu = 0, vv = 0) {
 
 // ---------- Content ----------
 // Building letters (footprint, solid) and their lower-case door tiles.
-// Building letters in the level maps. `id` is the model file in models/<id>.bin + .jpg.
+// Building letters in the level maps. `id` is the model file in models/<id>.json + .jpg.
 export const BUILDINGS = {
   K: { id: 'kula-rasica', name: { me: 'Kula Rašića', en: 'Rašić Tower' } },
   J: { id: 'sebilj', name: { me: 'Sebilj', en: 'Sebilj fountain' } },

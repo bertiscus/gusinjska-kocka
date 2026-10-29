@@ -60,7 +60,7 @@ const C = {
 const TEAL = [0.06, 0.62, 0.60, 0.65], GOLD = [0.92, 0.70, 0.22, 0.75];
 
 // ---------- buildings: scanned models ----------
-// Each building is a photo-scanned model in models/<id>.bin (mesh) + models/<id>.jpg (texture),
+// Each building is a photo-scanned model in models/<id>.json (mesh) + models/<id>.jpg (texture),
 // made with tools/convert.py. Model space: metres or mm as scanned, Y up, base at y = 0, door facing +Z.
 const SCANS = {};
 const MAX_H = 4.0; // tallest a building may stand, in tiles
@@ -91,7 +91,7 @@ async function loadScan(id) {
   if (SCANS[id]) return SCANS[id];
   const entry = SCANS[id] = { ready: false };
   try {
-    const [buf, img] = await Promise.all([fetch(`models/${id}.bin`).then((r) => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }), loadImage(`models/${id}.jpg`)]);
+    const [buf, img] = await Promise.all([fetch(`models/${id}.json`).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).then((j) => { const b = atob(j.data), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }), loadImage(`models/${id}.jpg`)]);
     const m = parseModel(buf);
     Object.assign(entry, { mesh: R.uploadModel(m), tex: R.texture(img), size: m.size, ready: true });
   } catch (err) { entry.failed = true; scansFailed++; console.warn('model', id, err); }

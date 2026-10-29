@@ -11,7 +11,7 @@ The buildings are our own 3D models, reduced to light game versions with their p
 | Path | What it is |
 |---|---|
 | `index.html` | The built game page (no outside libraries) |
-| `models/` | Game versions of the buildings: `<id>.bin` (mesh) and `<id>.jpg` (1024 px texture) |
+| `models/` | Game versions of the buildings: `<id>.json` (mesh) and `<id>.jpg` (1024 px texture) |
 | `tools/` | Turns a scanned OBJ + texture into a game model (`convert.py`, `decimate.mjs`, `models.json`) |
 | `src/core.js` | Levels, ball physics, crossing between faces, game rules, autopilot |
 | `src/render.js` | Small WebGL renderer and mesh builder |

@@ -3,7 +3,7 @@
 python3 -I tools/convert.py tools/models.json <id> [--out models] [--preview-only]
 
 Source paths in models.json are relative to tools/. Raw scans go in scans/ (not committed).
-Output: <id>.bin (mesh) and <id>.jpg (1024 px texture) in --out (default: out/),
+Output: <id>.json (mesh, GKM1 binary as base64) and <id>.jpg (1024 px texture) in --out (default: out/),
 plus <id>_check.png (scan vs game version, five views) in tmp/<id>/.
 """
 import json, os, struct, subprocess, sys, time
@@ -324,8 +324,9 @@ def write_bin(path, V, UV01, N, F):
     parts = [b'GKM1', struct.pack('<I', len(head)), head]
     for arr in (qp, qu, qn, idx):
         bts = arr.tobytes(); parts.append(bts + b'\0' * ((4 - len(bts) % 4) % 4))
-    with open(path, 'wb') as fh:
-        fh.write(b''.join(parts))
+    import base64
+    with open(path, 'w') as fh:
+        json.dump({'format': 'GKM1', 'data': base64.b64encode(b''.join(parts)).decode()}, fh)
 
 
 def main():
@@ -363,7 +364,7 @@ def main():
         np.add.at(N, Fc[:, j], fn * fa[:, None])
     N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
     UV01 = UVp / ATLAS
-    write_bin(os.path.join(outdir, f'{mid}.bin'), Vc, UV01, N, Fc)
+    write_bin(os.path.join(outdir, f'{mid}.json'), Vc, UV01, N, Fc)
     jpg = (np.clip(col, 0, 1) * 255).astype(np.uint8)[:, :, ::-1]
     cv2.imwrite(os.path.join(outdir, f'{mid}.jpg'), jpg, [cv2.IMWRITE_JPEG_QUALITY, 86])
     # check sheet: original (face colours) vs game version (colour from baked atlas at face centre)
@@ -374,7 +375,7 @@ def main():
     render_views(Vc, Fc, game_rgb, b, size=240, title=f'{mid}: game version {len(Fc)} triangles')
     sheet = np.concatenate([cv2.imread(a), cv2.imread(b)], 0)
     cv2.imwrite(os.path.join(tmpdir, f'{mid}_check.png'), sheet)
-    sz = os.path.getsize(os.path.join(outdir, f'{mid}.bin')) + os.path.getsize(os.path.join(outdir, f'{mid}.jpg'))
+    sz = os.path.getsize(os.path.join(outdir, f'{mid}.json')) + os.path.getsize(os.path.join(outdir, f'{mid}.jpg'))
     print(f'  done in {time.time() - t0:.0f} s, {len(Vc)} verts, {len(Fc)} tris, files {sz / 1024:.0f} KB')
 
 
