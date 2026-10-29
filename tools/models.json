@@ -1,0 +1,42 @@
+{
+ "kula-rasica": {
+  "obj": "../scans/Kula_Rasica_MergeCube/x/Kula_Rasica_MergeCube.obj",
+  "tex": "../scans/Kula_Rasica_MergeCube/x/Kula_Rasica_MergeCube_albedo.jpg",
+  "target": 12000
+ },
+ "sebilj": {
+  "obj": "../scans/Sebilj_Gusinje_MergeCube_v2/x/Sebilj_Gusinje.obj",
+  "tex": "../scans/Sebilj_Gusinje_MergeCube_v2/x/Sebilj_Gusinje_texture.jpg",
+  "target": 12000
+ },
+ "kula-nekovica": {
+  "obj": "../scans/Kula_Nekovica_MergeCube/x/Kula_Nekovica.obj",
+  "tex": "../scans/Kula_Nekovica_MergeCube/x/Kula_Nekovica_texture.jpg",
+  "target": 12000
+ },
+ "sahat-kula": {
+  "obj": "../scans/Sahat_kula_MergeCube/x/Sahat_kula_MergeCube.obj",
+  "tex": "../scans/Sahat_kula_MergeCube/x/Sahat_kula_MergeCube_albedo.jpg",
+  "target": 8000
+ },
+ "opstina": {
+  "obj": "../scans/Gusinje_opstina_MergeCube/x/Gusinje_opstina_MergeCube.obj",
+  "tex": "../scans/Gusinje_opstina_MergeCube/x/Gusinje_opstina_MergeCube_albedo.jpg",
+  "target": 12000
+ },
+ "cekica-dzamija": {
+  "obj": "../scans/Cekica_dzamija_MergeCube/x/Cekica_dzamija.obj",
+  "tex": "../scans/Cekica_dzamija_MergeCube/x/Cekica_dzamija_texture.jpg",
+  "target": 10000
+ },
+ "vezirova-dzamija": {
+  "obj": "../scans/vezirova/x/Vezirova_dzamija_samo_dzamija.obj",
+  "tex": "../scans/vezirova/x/Vezirova_dzamija_samo_dzamija_u1_v1_diffuse.png",
+  "up": "z",
+  "level": true,
+  "target": 12000,
+  "yaw": 180,
+  "cut_below": 0.1,
+  "trim_walls": true
+ }
+}

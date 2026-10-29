@@ -171,15 +171,26 @@ export class MeshBuilder {
 
 // ---------- GPU ----------
 const VS = `
-attribute vec3 aPos; attribute vec3 aNor; attribute vec4 aCol; attribute float aKind;
+attribute vec3 aPos; attribute vec3 aNor; attribute vec4 aCol; attribute float aKind; attribute vec2 aUV;
 uniform mat4 uModel; uniform mat4 uVP; uniform mat3 uNM;
-varying vec3 vN; varying vec4 vC; varying float vK; varying vec3 vW;
-void main(){ vec4 w = uModel*vec4(aPos,1.0); vW = w.xyz; vN = uNM*aNor; vC = aCol; vK = aKind; gl_Position = uVP*w; }`;
+varying vec3 vN; varying vec4 vC; varying float vK; varying vec3 vW; varying vec2 vUV;
+void main(){ vec4 w = uModel*vec4(aPos,1.0); vW = w.xyz; vN = uNM*aNor; vC = aCol; vK = aKind; vUV = aUV; gl_Position = uVP*w; }`;
 const FS = `
 precision mediump float;
-varying vec3 vN; varying vec4 vC; varying float vK; varying vec3 vW;
+varying vec3 vN; varying vec4 vC; varying float vK; varying vec3 vW; varying vec2 vUV;
 uniform vec3 uSun; uniform vec3 uCam; uniform float uTime; uniform vec4 uTint; uniform float uAlpha; uniform float uGlow;
+uniform sampler2D uTex; uniform float uUseTex;
 void main(){
+  if (uUseTex > 0.5) {
+    // Photo-scanned buildings: the texture already holds real light, so shade gently.
+    vec3 n = normalize(vN);
+    vec3 base = texture2D(uTex, vUV).rgb;
+    base = mix(base, uTint.rgb, uTint.a);
+    float diff = max(dot(n, uSun), 0.0);
+    vec3 col = base * (0.74 + 0.10*(0.5 + 0.5*n.y) + 0.26*diff);
+    gl_FragColor = vec4(col, 1.0) * uAlpha;
+    return;
+  }
   float k = vK;
   if (k > 2.5 && k < 3.5) { gl_FragColor = vec4(0.04, 0.06, 0.03, 1.0) * (vC.a * uAlpha); return; }
   vec3 n = normalize(vN);
@@ -220,8 +231,8 @@ export class Renderer {
     gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
     this.prog = p;
-    this.a = {}; for (const n of ['aPos', 'aNor', 'aCol', 'aKind']) this.a[n] = gl.getAttribLocation(p, n);
-    this.u = {}; for (const n of ['uModel', 'uVP', 'uNM', 'uSun', 'uCam', 'uTime', 'uTint', 'uAlpha', 'uGlow']) this.u[n] = gl.getUniformLocation(p, n);
+    this.a = {}; for (const n of ['aPos', 'aNor', 'aCol', 'aKind', 'aUV']) this.a[n] = gl.getAttribLocation(p, n);
+    this.u = {}; for (const n of ['uModel', 'uVP', 'uNM', 'uSun', 'uCam', 'uTime', 'uTint', 'uAlpha', 'uGlow', 'uTex', 'uUseTex']) this.u[n] = gl.getUniformLocation(p, n);
     gl.useProgram(p);
     gl.enable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);
@@ -240,7 +251,28 @@ export class Renderer {
       n: mb.idx.length, type: big ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
     };
   }
-  free(mesh) { if (!mesh) return; const gl = this.gl; for (const k of ['pos', 'nor', 'col', 'kind', 'idx']) gl.deleteBuffer(mesh[k]); }
+  // Scanned model: typed arrays straight from a model file.
+  uploadModel(m) {
+    const gl = this.gl;
+    if (m.idx32 && !this.uint32) throw new Error('mesh too large');
+    const mk = (data, target = gl.ARRAY_BUFFER) => { const b = gl.createBuffer(); gl.bindBuffer(target, b); gl.bufferData(target, data, gl.STATIC_DRAW); return b; };
+    return { pos: mk(m.pos), nor: mk(m.nor), uv: mk(m.uv), idx: mk(m.idx, gl.ELEMENT_ARRAY_BUFFER), n: m.idx.length, type: m.idx32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT };
+  }
+  texture(img) {
+    const gl = this.gl, t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const an = gl.getExtension('EXT_texture_filter_anisotropic') || gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
+    if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(4, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+    return t;
+  }
+  free(mesh) { if (!mesh) return; const gl = this.gl; for (const k of ['pos', 'nor', 'col', 'kind', 'uv', 'idx']) if (mesh[k]) gl.deleteBuffer(mesh[k]); }
   begin(w, h, vp, cam, sun, time) {
     const gl = this.gl;
     gl.viewport(0, 0, w, h);
@@ -250,7 +282,7 @@ export class Renderer {
     gl.uniform3fv(this.u.uSun, sun);
     gl.uniform1f(this.u.uTime, time % 1000);
   }
-  draw(mesh, model, { tint = [0, 0, 0, 0], alpha = 1, glow = 0, depthTest = true, depthWrite = true } = {}) {
+  draw(mesh, model, { tint = [0, 0, 0, 0], alpha = 1, glow = 0, depthTest = true, depthWrite = true, tex = null } = {}) {
     const gl = this.gl;
     gl.uniformMatrix4fv(this.u.uModel, false, model);
     gl.uniformMatrix3fv(this.u.uNM, false, normalMat(model));
@@ -259,8 +291,15 @@ export class Renderer {
     gl.uniform1f(this.u.uGlow, glow);
     if (depthTest) gl.enable(gl.DEPTH_TEST); else gl.disable(gl.DEPTH_TEST);
     gl.depthMask(depthWrite);
-    const bind = (b, loc, size) => { if (loc < 0) return; gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0); };
-    bind(mesh.pos, this.a.aPos, 3); bind(mesh.nor, this.a.aNor, 3); bind(mesh.col, this.a.aCol, 4); bind(mesh.kind, this.a.aKind, 1);
+    const bind = (b, loc, size, constant) => {
+      if (loc < 0) return;
+      if (b) { gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0); }
+      else { gl.disableVertexAttribArray(loc); gl['vertexAttrib' + constant.length + 'fv'](loc, constant); }
+    };
+    bind(mesh.pos, this.a.aPos, 3); bind(mesh.nor, this.a.aNor, 3);
+    bind(mesh.col, this.a.aCol, 4, [1, 1, 1, 1]); bind(mesh.kind, this.a.aKind, 1, [5]); bind(mesh.uv, this.a.aUV, 2, [0, 0]);
+    gl.uniform1f(this.u.uUseTex, tex ? 1 : 0);
+    if (tex) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(this.u.uTex, 0); }
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.idx);
     gl.drawElements(gl.TRIANGLES, mesh.n, mesh.type, 0);
     gl.depthMask(true);

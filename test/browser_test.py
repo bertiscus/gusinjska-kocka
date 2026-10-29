@@ -1,11 +1,16 @@
 import asyncio, json, os, sys, time
 from playwright.async_api import async_playwright
 
-URL = 'file://' + os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'index.html'))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+PORT = 8765
+URL = f'http://127.0.0.1:{PORT}/index.html'
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shots')
 
 async def main():
+    import subprocess
     os.makedirs(OUT, exist_ok=True)
+    server = subprocess.Popen([sys.executable, '-m', 'http.server', str(PORT), '--bind', '127.0.0.1'], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    await asyncio.sleep(1)
     async with async_playwright() as p:
         b = await p.chromium.launch(args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
         ctx = await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True, locale='sr-Latn-ME')
@@ -13,7 +18,7 @@ async def main():
         errors = []
         page.on('console', lambda m: errors.append(f'{m.type}: {m.text}') if m.type in ('error', 'warning') else None)
         page.on('pageerror', lambda e: errors.append(f'pageerror: {e}'))
-        await page.route('http*://**', lambda r: r.abort())
+        await page.route('**/*', lambda r: r.continue_() if r.request.url.startswith(f'http://127.0.0.1:{PORT}') else r.abort())
         await page.goto(URL)
         await page.wait_for_timeout(1800)
         await page.screenshot(path=f'{OUT}/01_title.png')
@@ -68,5 +73,6 @@ async def main():
         print('fps (headless software GL):', fps)
         print('errors:', errors if errors else 'none')
         await b.close()
+    server.terminate()
 
 asyncio.run(main())

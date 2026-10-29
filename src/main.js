@@ -1,5 +1,5 @@
 // ===== Gusinjska kocka — scene, input and screens =====
-import { N, H, BALL_R, FACES, LEVELS, PARS, parseLevel, Game, makeAutopilot, tileU, tileV, isSolidChar, isDoorChar, isBuildingChar, v3, stars, facePoint } from './core.js';
+import { N, H, BALL_R, FACES, LEVELS, PARS, BUILDINGS, parseLevel, Game, makeAutopilot, tileU, tileV, isSolidChar, isDoorChar, isBuildingChar, v3, stars, facePoint } from './core.js';
 import { q, m4, MeshBuilder, Renderer, hex, jitter, shade, mulberry } from './render.js';
 
 // ---------- text ----------
@@ -13,8 +13,10 @@ const TXT = {
     complete: 'Bravo!', time: 'Vrijeme', next: 'Sljedeći nivo', again: 'Ponovo', levels: 'Nivoi',
     spinL: 'Okreni kocku ulijevo', spinR: 'Okreni kocku udesno', flat: 'Poravnaj', flatLabel: 'Poravnaj stranu s kuglom',
     restart: 'Kreni iz početka', soundOn: 'Isključi zvuk', soundOff: 'Uključi zvuk', menu: 'Nivoi',
-    note: 'Građevine su privremeni modeli. Uskoro stižu vaši 3D modeli i priče.',
-    stub: 'Privremeni model. Ovdje dolaze vaš 3D model i kratka priča.',
+    note: 'Kratke priče o građevinama stižu uskoro.',
+    stub: 'Kratka priča o ovoj građevini stiže uskoro.',
+    loading: 'Učitavam 3D modele… {n}/{t}',
+    loadFail: 'Neki modeli se nisu učitali. Provjeri internet i osvježi stranicu.',
     par: 'Tri zvjezdice: do {par} s', newBest: 'Novi rekord', allDone: 'Svi nivoi su završeni.',
     noGL: 'Ovaj preglednik ne može prikazati 3D. Probaj u Chromeu ili Safariju.',
     keys: 'Tastatura: strelice naginju, Q i E okreću, razmak poravnava.',
@@ -28,8 +30,10 @@ const TXT = {
     complete: 'Well done!', time: 'Time', next: 'Next level', again: 'Again', levels: 'Levels',
     spinL: 'Turn the cube left', spinR: 'Turn the cube right', flat: 'Level', flatLabel: 'Level the ball’s face',
     restart: 'Start over', soundOn: 'Mute', soundOff: 'Unmute', menu: 'Levels',
-    note: 'The buildings are stand-in models. Your own 3D models and stories come next.',
-    stub: 'Stand-in model. Your 3D model and a short story go here.',
+    note: 'Short stories about the buildings are coming soon.',
+    stub: 'A short story about this building is coming soon.',
+    loading: 'Loading 3D models… {n}/{t}',
+    loadFail: 'Some models didn’t load. Check the connection and reload the page.',
     par: 'Three stars: {par} s or less', newBest: 'New best', allDone: 'All levels complete.',
     noGL: 'This browser can’t show 3D. Try Chrome or Safari.',
     keys: 'Keyboard: arrows tilt, Q and E turn, space levels.',
@@ -55,84 +59,65 @@ const C = {
 };
 const TEAL = [0.06, 0.62, 0.60, 0.65], GOLD = [0.92, 0.70, 0.22, 0.75];
 
-// ---------- buildings (stand-in models) ----------
-// Local frame: x right, y up, z towards the door. Footprint W (x) × D (z) tiles.
-function sideBox(mb, side, hw, hd, along, y, w, h, c, out = 0.02) {
-  // side: 0 front(+z) 1 back(-z) 2 right(+x) 3 left(-x)
-  if (side === 0) mb.box(along, y, hd + out / 2, w / 2, h / 2, out / 2 + 0.005, c);
-  if (side === 1) mb.box(along, y, -hd - out / 2, w / 2, h / 2, out / 2 + 0.005, c);
-  if (side === 2) mb.box(hw + out / 2, y, along, out / 2 + 0.005, h / 2, w / 2, c);
-  if (side === 3) mb.box(-hw - out / 2, y, along, out / 2 + 0.005, h / 2, w / 2, c);
-}
-const MODELS = {
-  kula(mb, W, D) {
-    const hw = Math.min(W, D) * 0.38, top = 2.7;
-    mb.box(0, 0.1, 0, hw + 0.14, 0.1, hw + 0.14, C.stoneDark);
-    mb.box(0, 0.2 + (top - 0.2) / 2, 0, hw, (top - 0.2) / 2, hw, C.kula);
-    mb.box(0, 1.9, 0, hw + 0.04, 0.045, hw + 0.04, C.stoneDark);
-    for (let s = 0; s < 4; s++) {
-      sideBox(mb, s, hw, hw, 0, 1.25, 0.12, 0.34, C.dark);
-      sideBox(mb, s, hw, hw, -0.42, 2.3, 0.22, 0.3, C.dark); sideBox(mb, s, hw, hw, 0.42, 2.3, 0.22, 0.3, C.dark);
-    }
-    sideBox(mb, 0, hw, hw, 0, 0.58, 0.46, 0.76, C.woodDark, 0.03);
-    sideBox(mb, 0, hw, hw, 0, 1.0, 0.62, 0.08, C.stoneDark, 0.05);
-    mb.box(0, top + 0.04, 0, hw + 0.1, 0.04, hw + 0.1, C.woodDark);
-    mb.frustum(0, 0, top + 0.08, top + 1.1, (hw + 0.24) * Math.SQRT2, 0, 4, C.roof, 0, Math.PI / 4);
-    return { height: top + 1.1 };
-  },
-  sebilj(mb, W, D) {
-    const R = Math.min(W, D) * 0.4, rot = Math.PI / 8;
-    mb.frustum(0, 0, 0, 0.16, R + 0.06, R, 8, C.slab, 0, rot);
-    mb.frustum(0, 0, 0.16, 0.5, 0.34, 0.3, 8, C.plaster, 0, rot, true, C.water);
-    for (let k = 0; k < 8; k++) { const a = rot + k * Math.PI / 4; mb.box(Math.cos(a) * R * 0.88, 0.66, Math.sin(a) * R * 0.88, 0.045, 0.5, 0.045, C.wood); }
-    mb.frustum(0, 0, 0.98, 1.16, R * 0.93, R * 0.93, 8, C.wood, 0, rot, false);
-    mb.frustum(0, 0, 1.16, 1.24, R * 1.22, R * 1.22, 8, C.woodDark, 0, rot);
-    mb.frustum(0, 0, 1.24, 1.62, R * 1.22, R * 0.7, 8, C.lead, 0, rot);
-    mb.frustum(0, 0, 1.62, 1.86, R * 0.7, 0, 8, C.lead, 0, rot);
-    mb.frustum(0, 0, 1.86, 2.1, 0.05, 0.03, 6, C.gold);
-    mb.frustum(0, 0, 2.1, 2.22, 0.08, 0, 6, C.gold);
-    return { height: 2.2 };
-  },
-  kuca(mb, W, D) {
-    const hx = W * 0.42, hz = D * 0.38, eave = 1.66, ridge = 2.5;
-    mb.box(0, 0.45, 0, hx, 0.45, hz, C.stone);
-    mb.box(0, 0.93, 0, hx + 0.1, 0.035, hz + 0.1, C.woodDark);
-    mb.box(0, 0.96 + (eave - 0.96) / 2, 0, hx + 0.08, (eave - 0.96) / 2, hz + 0.08, C.plaster);
-    sideBox(mb, 0, hx, hz, 0, 0.42, 0.42, 0.7, C.woodDark, 0.03);
-    for (const x of [-0.85, 0, 0.85]) { sideBox(mb, 0, hx + 0.08, hz + 0.08, x, 1.32, 0.3, 0.36, C.dark); sideBox(mb, 1, hx + 0.08, hz + 0.08, x, 1.32, 0.3, 0.36, C.dark); }
-    sideBox(mb, 0, hx, hz, -0.75, 0.5, 0.18, 0.22, C.dark); sideBox(mb, 0, hx, hz, 0.75, 0.5, 0.18, 0.22, C.dark);
-    const ox = hx + 0.26, oz = hz + 0.3, ins = [0, 1.2, 0];
-    mb.poly([[-ox, eave - 0.06, oz], [ox, eave - 0.06, oz], [ox, ridge, 0], [-ox, ridge, 0]], C.shingle, 0, ins);
-    mb.poly([[-ox, eave - 0.06, -oz], [-ox, ridge, 0], [ox, ridge, 0], [ox, eave - 0.06, -oz]], shade(C.shingle, 0.92), 0, ins);
-    const gx = hx + 0.08;
-    mb.poly([[gx, eave, hz + 0.08], [gx, eave, -hz - 0.08], [gx, ridge - 0.05, 0]], C.plaster, 0, ins);
-    mb.poly([[-gx, eave, hz + 0.08], [-gx, ridge - 0.05, 0], [-gx, eave, -hz - 0.08]], C.plaster, 0, ins);
-    mb.box(0.62, 2.35, -0.25, 0.12, 0.3, 0.12, C.stoneDark);
-    return { height: ridge };
-  },
-  vodenica(mb, W, D) {
-    const hx = Math.min(W, D) * 0.3, hz = Math.min(W, D) * 0.28, wall = 0.95, ridge = 1.75;
-    mb.box(-0.08, 0.1, 0, hx + 0.14, 0.1, hz + 0.14, C.stoneDark);
-    mb.box(-0.08, 0.2 + (wall - 0.2) / 2, 0, hx, (wall - 0.2) / 2, hz, C.wood);
-    for (const y of [0.42, 0.62, 0.82]) mb.box(-0.08, y, 0, hx + 0.012, 0.012, hz + 0.012, C.woodDark);
-    sideBox(mb, 0, hx, hz, -0.08, 0.5, 0.34, 0.56, C.dark, 0.03);
-    const ox = hx + 0.18, oz = hz + 0.2, ins = [-0.08, 0.8, 0];
-    mb.poly([[-ox - 0.08, wall, oz], [ox - 0.08, wall, oz], [ox - 0.08, ridge, 0], [-ox - 0.08, ridge, 0]], C.shingle, 0, ins);
-    mb.poly([[-ox - 0.08, wall, -oz], [-ox - 0.08, ridge, 0], [ox - 0.08, ridge, 0], [ox - 0.08, wall, -oz]], shade(C.shingle, 0.92), 0, ins);
-    for (const s of [1, -1]) mb.poly([[s * hx - 0.08, wall, hz], [s * hx - 0.08, wall, -hz], [s * hx - 0.08, ridge - 0.04, 0]], C.wood, 0, ins);
-    mb.box(hx + 0.12, 0.62, 0, 0.12, 0.05, 0.05, C.woodDark); // axle
-    return { height: ridge, wheel: { at: [hx + 0.3, 0.62, 0], r: 0.5 } };
-  },
-};
-function wheelMesh() {
-  const mb = new MeshBuilder();
-  mb.frustum(0, 0, -0.07, 0.07, 0.5, 0.5, 14, C.wood, 0, 0, false);
-  mb.frustum(0, 0, -0.08, 0.08, 0.1, 0.1, 8, C.woodDark);
-  for (let k = 0; k < 8; k++) {
-    const a = k / 8 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
-    mb.poly([[c * 0.1, -0.09, s * 0.1], [c * 0.6, -0.09, s * 0.6], [c * 0.6, 0.09, s * 0.6], [c * 0.1, 0.09, s * 0.1]], C.woodDark, 0, [c * 0.35 + s, 0, s * 0.35 - c]);
+// ---------- buildings: scanned models ----------
+// Each building is a photo-scanned model in models/<id>.bin (mesh) + models/<id>.jpg (texture),
+// made with tools/convert.py. Model space: metres or mm as scanned, Y up, base at y = 0, door facing +Z.
+const SCANS = {};
+const MAX_H = 4.0; // tallest a building may stand, in tiles
+
+function parseModel(buf) {
+  const dv = new DataView(buf);
+  const magic = String.fromCharCode(dv.getUint8(0), dv.getUint8(1), dv.getUint8(2), dv.getUint8(3));
+  if (magic !== 'GKM1') throw new Error('not a model file');
+  const hl = dv.getUint32(4, true);
+  const head = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 8, hl)));
+  let off = 8 + hl;
+  const take = (T, n, size) => { const a = new T(buf, off, n); off += Math.ceil((n * size) / 4) * 4; return a; };
+  const qp = take(Uint16Array, head.nv * 3, 2), qu = take(Uint16Array, head.nv * 2, 2), qn = take(Int8Array, head.nv * 4, 1);
+  const idx = head.idx32 ? take(Uint32Array, head.nf * 3, 4) : take(Uint16Array, head.nf * 3, 2);
+  const lo = head.min, span = head.max.map((v, i) => v - lo[i]);
+  const pos = new Float32Array(head.nv * 3), nor = new Float32Array(head.nv * 3), uv = new Float32Array(head.nv * 2);
+  for (let i = 0; i < head.nv; i++) {
+    for (let k = 0; k < 3; k++) { pos[3 * i + k] = lo[k] + (qp[3 * i + k] / 65535) * span[k]; nor[3 * i + k] = qn[4 * i + k] / 127; }
+    uv[2 * i] = qu[2 * i] / 65535; uv[2 * i + 1] = qu[2 * i + 1] / 65535;
   }
-  return mb;
+  return { pos, nor, uv, idx, idx32: !!head.idx32, size: span, min: lo };
+}
+function loadImage(src) {
+  return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('image ' + src)); im.src = src; });
+}
+let scansDone = 0, scansFailed = 0;
+async function loadScan(id) {
+  if (SCANS[id]) return SCANS[id];
+  const entry = SCANS[id] = { ready: false };
+  try {
+    const [buf, img] = await Promise.all([fetch(`models/${id}.bin`).then((r) => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }), loadImage(`models/${id}.jpg`)]);
+    const m = parseModel(buf);
+    Object.assign(entry, { mesh: R.uploadModel(m), tex: R.texture(img), size: m.size, ready: true });
+  } catch (err) { entry.failed = true; scansFailed++; console.warn('model', id, err); }
+  scansDone++;
+  updateLoadNote();
+  return entry;
+}
+function loadAllScans() {
+  const ids = [...new Set(Object.values(BUILDINGS).map((b) => b.id))];
+  scansTotal = ids.length;
+  ids.forEach((id) => loadScan(id));
+}
+let scansTotal = 0;
+function updateLoadNote() {
+  const el = $('note'); if (!el) return;
+  if (scansDone < scansTotal) el.textContent = t('loading').replace('{n}', scansDone).replace('{t}', scansTotal);
+  else el.textContent = scansFailed ? t('loadFail') : t('note');
+}
+const fitScale = (size, W, D) => Math.min((W - 0.3) / size[0], (D - 0.3) / size[2], MAX_H / size[1]);
+
+// Plain stone block shown only while a model is still loading.
+function placeholderModel(mb, W, D) {
+  const hx = W * 0.36, hz = D * 0.36, h = 0.9;
+  mb.box(0, h / 2, 0, hx, h / 2, hz, C.stone);
+  mb.frustum(0, 0, h, h + 0.6, Math.max(hx, hz) * Math.SQRT2 + 0.1, 0, 4, C.roof, 0, Math.PI / 4);
+  return { height: h + 0.6 };
 }
 
 // ---------- world mesh for a level ----------
@@ -196,13 +181,8 @@ function buildWorld(L, seed) {
     const W = alongU ? ext[1] : ext[0], D = alongU ? ext[0] : ext[1];
     const o = facePoint(b.f, b.cu, b.cv);
     const bm = new MeshBuilder().setFrame(o, X, Y, Z);
-    const info = MODELS[b.id](bm, W, D);
-    const entry = { b, mesh: bm, height: info.height, top: v3.add(o, v3.scale(Y, info.height + 0.75)), frame: { X, Y, Z, o } };
-    if (info.wheel) {
-      const w = info.wheel, c = v3.add(o, v3.add(v3.add(v3.scale(X, w.at[0]), v3.scale(Y, w.at[1])), v3.scale(Z, w.at[2])));
-      entry.wheel = { center: c, Xw: Y, Yw: X, Zw: v3.cross(Y, X) };
-    }
-    world.buildings.push(entry);
+    const info = placeholderModel(bm, W, D);
+    world.buildings.push({ b, mesh: bm, W, D, placeholderH: info.height, frame: { X, Y, Z, o } });
     // door ring
     const dfr = faceFrame(b.door.f);
     const rm = new MeshBuilder().setFrame(dfr.o, dfr.X, dfr.Y, dfr.Z);
@@ -345,7 +325,7 @@ const starRow = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
 function renderTitle() {
   $('tagline').textContent = t('tagline');
-  $('note').textContent = t('note');
+  updateLoadNote();
   $('keys').textContent = t('keys');
   document.documentElement.lang = lang === 'me' ? 'sr-Latn-ME' : 'en';
   document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
@@ -600,11 +580,15 @@ function draw() {
   R.draw(gpu.world, cube);
   world.buildings.forEach((e, i) => {
     const done = game.visited.has(e.b.letter);
-    R.draw(gpu.buildings[i], cube, { tint: done ? [0.98, 0.82, 0.45, 0.12] : [0, 0, 0, 0] });
-    if (e.wheel) {
-      const w = e.wheel;
-      const m = m4.mul(cube, m4.mul(m4.basis(w.Xw, w.Yw, w.Zw, w.center), m4.fromQ(q.axis([0, 1, 0], -clock * 1.6))));
-      R.draw(sharedMeshes.wheel, m);
+    const tint = done ? [1.0, 0.86, 0.5, 0.1] : [0, 0, 0, 0];
+    const sc = SCANS[e.b.id];
+    if (sc && sc.ready) {
+      const s = fitScale(sc.size, e.W, e.D), f = e.frame;
+      e.height = sc.size[1] * s;
+      R.draw(sc.mesh, m4.mul(cube, m4.basis(f.X, f.Y, f.Z, v3.sub(f.o, v3.scale(f.Y, 0.03)), s)), { tex: sc.tex, tint });
+    } else {
+      e.height = e.placeholderH;
+      R.draw(gpu.buildings[i], cube, { tint });
     }
   });
   const pulse = 0.35 + 0.25 * Math.sin(clock * 4);
@@ -625,8 +609,8 @@ function draw() {
   // markers above unvisited buildings
   world.buildings.forEach((e) => {
     if (game.visited.has(e.b.letter)) return;
-    const bob = Math.sin(clock * 2.2 + e.height) * 0.12;
-    const p = v3.add(e.top, v3.scale(e.frame.Y, bob));
+    const bob = Math.sin(clock * 2.2 + e.b.letter.charCodeAt(0)) * 0.12;
+    const p = v3.add(e.frame.o, v3.scale(e.frame.Y, e.height + 0.7 + bob));
     const m = m4.mul(cube, m4.mul(m4.basis(e.frame.X, e.frame.Y, e.frame.Z, p), m4.fromQ(q.axis([0, 1, 0], clock * 1.4))));
     R.draw(sharedMeshes.marker, m, { tint: TEAL, glow: 0.35 });
   });
@@ -646,7 +630,8 @@ function boot(data = {}) {
   try { R = new Renderer(els.gl); } catch (err) {
     els.nogl.hidden = false; els.nogl.textContent = t('noGL'); els.title.hidden = true; return;
   }
-  sharedMeshes = { ball: R.upload(ballMesh()), marker: R.upload(markerMesh()), blob: R.upload(new MeshBuilder().blob(0.44, 0.34)), wheel: R.upload(wheelMesh()) };
+  sharedMeshes = { ball: R.upload(ballMesh()), marker: R.upload(markerMesh()), blob: R.upload(new MeshBuilder().blob(0.44, 0.34)) };
+  loadAllScans();
   resize();
   window.addEventListener('resize', resize);
   demo = location.hash === '#demo';

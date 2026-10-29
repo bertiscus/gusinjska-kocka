@@ -1,3 +1,7 @@
 dist/
 test/shots/
 node_modules/
+scans
+tmp/
+out/
+__pycache__/
