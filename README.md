@@ -131,7 +131,7 @@ Only facts found in at least one published source are used; anything uncertain w
 | Building | Facts used | Sources |
 |---|---|---|
 | Kula Rašića | Built 1904 by the sons of Ramadan Raš Radončić; descendants took the surname Rašić; stands on Tablja hill, the town's highest point | Turistička organizacija Gusinje, after H. R. Markišić, *Kulturno-istorijsko nasljeđe plavsko-gusinjskog kraja* (gusinje-plav.com archive, 12 Dec 2023) |
-| Sebilj | Replica of the Sarajevo Sebilj on Baščaršija; a sebilj is a public fountain with free water | RTV Slon, 4 Sep 2024 ("Uskoro izgradnja Sahat kule i Muzeja u Gusinju"); Wikipedia, *Sebilj in Sarajevo* |
+| Sebilj | Replica of the Sarajevo Sebilj on Baščaršija; built with funds from the diaspora living in New York; a sebilj is a public fountain with free water | RTV Slon, 4 Sep 2024 ("Uskoro izgradnja Sahat kule i Muzeja u Gusinju"); Wikipedia, *Sebilj in Sarajevo*; diaspora funding confirmed by the project team (30 Oct 2026) |
 | Kula Nekovića | Stone tower at the entrance to Gusinje, about 1840 (168 years old in 2009); thought to be the oldest surviving house in the area; restored, now takes guests | Mešihat IZ CG, 2 Nov 2009 ("Vraća se život kuli Nekovića u Gusinju"); Radio Sarajevo, 13 Aug 2026; Adriacom; accommodation listings |
 | Sahat kula | At the entrance to Gusinje; foundation stone 4 Sep 2024, opened 24 Jul 2026; funded by emigrants from Plav and Gusinje in New York | Radio Fatih and RTV Slon, 4 Sep 2024; Sandžačke, 25 Jul 2026; Radio Sarajevo, 13 Aug 2026 |
 | Opština Gusinje | Separate municipality since 2014 (split from Plav); first written mention 1330 | Wikipedia, *Gusinje Municipality*; Austrian Academy of Sciences, *Maps of Power* (Gusinje) |
