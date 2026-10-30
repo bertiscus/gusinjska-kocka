@@ -2,7 +2,9 @@
 
 A tilt-maze game on a six-sided cube. Tilt the cube, roll the ball through a maze that wraps around all six faces, and visit the buildings of Gusinje by rolling the ball to their doors. Part of Xplore Prokletije.
 
-**Opening screen:** the game opens with *Xplore Prokletije – predstavlja / prezanton / presents – Gusinjska kocka* for about 2.5 s; a tap skips it, `?nointro` turns it off.
+**Opening screen:** the Xplore Prokletije logo assembles itself on a dark teal background with the Prokletije skyline (base, house, the pixel squares one by one, then the words), followed by *predstavlja / prezanton / presents – Gusinjska kocka*; about 3 s, a tap skips it, `?nointro` turns it off. The logo also heads the start screen.
+
+**Logo:** `brand/` has the Xplore Prokletije logo without its background, as SVG and 2400 px PNG: original colours, `-teal` (game colours for light backgrounds) and `-light` (cream and mint for dark backgrounds). `tools/trace_logo.py` traces it from `brand/source/xplore-prokletije.png` and writes `src/xp-logo.svg`, whose colours the page sets (`--lg-ink`, `--lg-accent`).
 
 **Languages:** Montenegrin, Albanian and English (switch on the start screen; picked from the phone's language the first time).
 
@@ -16,7 +18,7 @@ A tilt-maze game on a six-sided cube. Tilt the cube, roll the ball through a maz
 
 **Install as an app (Android, Windows):** on the GitHub Pages site, Chrome and Edge show **Instaliraj igru / Instalo lojën / Install the game** on the start screen (or offer it in the browser menu). Installed, *Gusinjska kocka* gets its own icon on the home screen or in the Start menu, opens in its own window, and works without internet once it has been opened once (`sw.js`: the newest version is used whenever there is a connection).
 
-**QR codes:** `qr/gusinjska-kocka-android.png` and `qr/gusinjska-kocka-windows.png` (10 × 13 cm at 300 dpi), and `qr/gusinjska-kocka-qr-a4.pdf` (two of each, with cut lines). Xplore Prokletije badge in the middle, the game's name below. They open `https://bertiscus.github.io/gusinjska-kocka/?p=android` and `?p=windows` (the same game; the tag only tells the two codes apart). On Android scan with the camera or Google Lens; on Windows with the **Camera** app (QR code mode). Remake them with `python3 tools/make_brand.py`, which also draws the app icons and checks that every code decodes.
+**QR codes:** `qr/gusinjska-kocka-android.png` and `qr/gusinjska-kocka-windows.png` (10 × 13 cm at 300 dpi), and `qr/gusinjska-kocka-qr-a4.pdf` (two of each, with cut lines). The Xplore Prokletije logo (in the game's ink and teal) in the middle, the game's name below. They open `https://bertiscus.github.io/gusinjska-kocka/?p=android` and `?p=windows` (the same game; the tag only tells the two codes apart). On Android scan with the camera or Google Lens; on Windows with the **Camera** app (QR code mode). Remake them with `python3 tools/make_brand.py`, which also draws the app icons and checks that every code decodes.
 
 **Play:** open `index.html` (or the GitHub Pages site for this repo) on a phone and drag across the screen to tilt the cube.
 
@@ -43,6 +45,7 @@ The buildings are our own 3D models, reduced to light game versions with their p
 | `manifest.webmanifest`, `icons/`, `sw.js` | Installable app: name, icons, offline copy |
 | `qr/` | QR cards for Android and Windows, PNG and print PDF |
 | `tools/make_brand.py`, `tools/fonts/` | Draws the QR cards and app icons (fonts: Marcellus and Golos Text, SIL Open Font License) |
+| `brand/`, `tools/trace_logo.py`, `src/xp-logo.svg` | Xplore Prokletije logo: source image, transparent SVG/PNG versions, and the tracer that makes them |
 | `test/core.test.mjs` | Checks edge crossing, level maps, that the autopilot finishes every level, and a 400-second random-tilt test |
 | `test/browser_test.py` | Plays every level in a phone-sized headless browser and takes screenshots |
 | `test/ar_video.py`, `test/ar_test.py` | AR test: renders a fake camera video of the cube (or card) with known poses (`--fov`, `--dist` for narrow cameras), plays it as the browser's camera and checks pose, on-screen alignment, gravity and ball direction; `--auto` lets the game learn the field of view |

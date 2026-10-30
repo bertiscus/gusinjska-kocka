@@ -889,7 +889,7 @@ function runIntro() {
   if (skip) { el.hidden = true; return; }
   el.addEventListener('pointerdown', () => { audio.init(); hide(); });
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  setTimeout(hide, reduce ? 1400 : 2700);
+  setTimeout(hide, reduce ? 1600 : 3100);
 }
 runIntro();
 

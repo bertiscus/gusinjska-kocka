@@ -123,6 +123,8 @@ button { font: inherit; color: inherit; }
   max-height: calc(100% - 8px); overflow-y: auto;
 }
 .eyebrow { margin: 0; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.brand { margin: 0; line-height: 0; }
+.brand .xp-logo { display: block; height: 50px; width: auto; --lg-ink: var(--ink); --lg-accent: var(--accent); }
 .card h1, .card h2 { margin: 0; font-family: var(--display); font-weight: 400; line-height: 1.02; text-wrap: balance; }
 .card h1 { font-size: clamp(2.2rem, 10vw, 2.8rem); letter-spacing: 0.005em; }
 .card h2 { font-size: 2.4rem; }
@@ -171,6 +173,10 @@ button { font: inherit; color: inherit; }
 
 .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-left, 0px)); text-align: center; font-size: 1rem; }
 
+/* ---------- Xplore Prokletije logo (src/xp-logo.svg; colours come from --lg-ink and --lg-accent) ---------- */
+.lg-ink { fill: var(--lg-ink, #17222a); }
+.lg-acc { fill: var(--lg-accent, #005af7); }
+
 /* ---------- opening screen ---------- */
 .intro {
   position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; cursor: pointer;
@@ -182,18 +188,30 @@ button { font: inherit; color: inherit; }
   transition: opacity 0.6s ease, visibility 0.6s;
 }
 .intro.is-out { opacity: 0; visibility: hidden; pointer-events: none; }
-.intro-inner { display: grid; justify-items: center; text-align: center; }
-.intro-ridge { width: min(220px, 60vw); height: auto; margin-bottom: 18px; overflow: visible; }
-.intro-ridge path { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 400; stroke-dashoffset: 400; animation: ridge-draw 1.3s cubic-bezier(.4, 0, .2, 1) forwards; }
-.ridge-back { stroke: #8fb9ae; stroke-width: 2; }
-.ridge-front { stroke: #4fc3b5; stroke-width: 2.6; animation-delay: 0.15s !important; }
-.ridge-snow { stroke: #ffffff; stroke-width: 2.6; animation-delay: 0.7s !important; }
-@keyframes ridge-draw { to { stroke-dashoffset: 0; } }
+.intro-inner { position: relative; z-index: 1; display: grid; justify-items: center; text-align: center; }
 .intro p { margin: 0; opacity: 0; animation: intro-up 0.7s cubic-bezier(.2, .8, .2, 1) forwards; }
-.intro-x { font-family: var(--display); font-size: clamp(3rem, 15vw, 4.4rem); line-height: 0.95; letter-spacing: 0.01em; animation-delay: 0.45s !important; }
-.intro-p { font-family: var(--ui); font-weight: 600; font-size: clamp(0.9rem, 4.2vw, 1.15rem); letter-spacing: 0.46em; text-transform: uppercase; margin-right: -0.46em !important; color: #a9d4ca; margin-top: 8px !important; animation-delay: 0.65s !important; }
-.intro-sub { font-size: 0.85rem; color: rgba(239, 233, 220, 0.7); margin-top: 34px !important; animation-delay: 1.05s !important; }
-.intro-game { font-family: var(--display); font-size: 1.6rem; margin-top: 6px !important; animation-delay: 1.2s !important; }
+.intro-logo { width: min(330px, 82vw); }
+.intro-logo .xp-logo { display: block; width: 100%; height: auto; overflow: visible; --lg-ink: #efe9dc; --lg-accent: #4fc3b5; filter: drop-shadow(0 6px 22px rgba(79, 195, 181, 0.18)); }
+/* the logo assembles itself: base, house, the pixel squares one by one, then the words */
+.intro .xp-logo g, .intro .xp-logo .lg-px { transform-box: fill-box; opacity: 0; animation: 0.7s cubic-bezier(.2, .8, .2, 1) both; }
+.intro .xp-logo .lg-base { transform-origin: 50% 100%; animation-name: lg-spread; animation-delay: 0.1s; }
+.intro .xp-logo .lg-house { transform-origin: 50% 100%; animation-name: lg-rise; animation-delay: 0.3s; }
+.intro .xp-logo .lg-pixels { opacity: 1; animation: none; }
+.intro .xp-logo .lg-px { transform-origin: 50% 50%; animation-name: lg-pop; animation-duration: 0.45s; animation-delay: calc(0.6s + var(--i) * 0.055s); }
+.intro .xp-logo .lg-word1 { animation-name: lg-slide; animation-delay: 1.05s; }
+.intro .xp-logo .lg-word2 { animation-name: lg-slide; animation-delay: 1.2s; }
+@keyframes lg-spread { from { opacity: 0; transform: scaleX(0.6); } to { opacity: 1; transform: none; } }
+@keyframes lg-rise { from { opacity: 0; transform: translateY(14%); } to { opacity: 1; transform: none; } }
+@keyframes lg-pop { 0% { opacity: 0; transform: scale(0.2); } 70% { opacity: 1; transform: scale(1.12); } 100% { opacity: 1; transform: none; } }
+@keyframes lg-slide { from { opacity: 0; transform: translateX(-6%); } to { opacity: 1; transform: none; } }
+.intro-sub { font-size: 0.85rem; color: rgba(239, 233, 220, 0.7); margin-top: 30px !important; animation-delay: 1.5s !important; }
+.intro-game { font-family: var(--display); font-size: 1.6rem; margin-top: 6px !important; animation-delay: 1.65s !important; }
+/* Prokletije skyline along the bottom of the opening screen */
+.intro-hills { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 26vh; min-height: 120px; pointer-events: none; }
+.intro-hills .h1 { fill: rgba(79, 195, 181, 0.07); }
+.intro-hills .h2 { fill: rgba(14, 36, 39, 0.55); }
+.intro-hills .rim { fill: none; stroke: rgba(79, 195, 181, 0.45); stroke-width: 1.2; vector-effect: non-scaling-stroke; stroke-dasharray: 1600; stroke-dashoffset: 1600; animation: ridge-draw 2.2s cubic-bezier(.4, 0, .2, 1) 0.2s forwards; }
+@keyframes ridge-draw { to { stroke-dashoffset: 0; } }
 @keyframes intro-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
 /* ---------- zoom ---------- */
@@ -247,19 +265,18 @@ body.is-ar .lvl > span:last-child { background: var(--panel); border: 1px solid 
 }
 @media (prefers-reduced-motion: reduce) {
   .toast.is-in, .finger::before, .stars .on, .ar-hint-cube { animation: none; }
-  .intro p, .intro-ridge path { animation: none; opacity: 1; stroke-dashoffset: 0; }
+  .intro p, .intro .xp-logo g, .intro .xp-logo .lg-px, .intro-hills .rim { animation: none; opacity: 1; stroke-dashoffset: 0; }
 }
 </style>
 
 <div id="intro" class="intro" role="img" aria-label="Xplore Prokletije">
+  <svg class="intro-hills" viewBox="0 0 400 100" preserveAspectRatio="none" aria-hidden="true">
+    <path class="h1" d="M0 100 V58 L40 40 L70 52 L118 22 L150 44 L182 30 L214 50 L250 18 L292 46 L330 34 L362 50 L400 38 V100 Z"/>
+    <path class="h2" d="M0 100 V74 L36 62 L64 70 L104 52 L140 68 L180 56 L224 72 L262 58 L300 70 L340 60 L400 72 V100 Z"/>
+    <path class="rim" d="M0 58 L40 40 L70 52 L118 22 L150 44 L182 30 L214 50 L250 18 L292 46 L330 34 L362 50 L400 38"/>
+  </svg>
   <div class="intro-inner">
-    <svg class="intro-ridge" viewBox="0 0 240 70" aria-hidden="true">
-      <path class="ridge-back" d="M4 62 L38 34 L52 44 L80 14 L98 30 L112 22 L138 46 L160 26 L176 36 L198 18 L236 62"/>
-      <path class="ridge-front" d="M4 62 L30 48 L50 56 L74 38 L96 52 L120 34 L146 54 L170 42 L196 56 L236 62"/>
-      <path class="ridge-snow" d="M72 20 L80 14 L88 22 M190 24 L198 18 L205 25"/>
-    </svg>
-    <p class="intro-x">Xplore</p>
-    <p class="intro-p">Prokletije</p>
+    <div class="intro-logo"><!--XP_LOGO--></div>
     <p class="intro-sub" id="introSub">predstavlja</p>
     <p class="intro-game">Gusinjska kocka</p>
   </div>
@@ -325,7 +342,7 @@ body.is-ar .lvl > span:last-child { background: var(--panel); border: 1px solid 
     <div class="card">
       <div class="head">
         <div class="top-row">
-          <p class="eyebrow">Xplore Prokletije</p>
+          <div class="brand" role="img" aria-label="Xplore Prokletije"><!--XP_LOGO--></div>
           <div class="lang" role="group" aria-label="Jezik / Gjuha / Language">
             <button type="button" data-lang="me" aria-pressed="true" lang="sr-Latn-ME" title="Crnogorski">ME</button>
             <button type="button" data-lang="sq" aria-pressed="false" lang="sq" title="Shqip">SQ</button>

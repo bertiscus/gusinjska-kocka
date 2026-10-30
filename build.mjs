@@ -44,7 +44,8 @@ for (const p of order) {
   const m = mods.get(p);
   js += `// ---- ${p} ----\n__mods[${JSON.stringify(p)}] = (() => {\n${m.code}\nreturn { ${m.exports.join(', ')} };\n})();\n`;
 }
-const page = readFileSync('src/page.html', 'utf8').replace('/*__SCRIPT__*/', () => js);
+const logo = readFileSync('src/xp-logo.svg', 'utf8').trim();   // Xplore Prokletije logo (tools/trace_logo.py)
+const page = readFileSync('src/page.html', 'utf8').replaceAll('<!--XP_LOGO-->', () => logo).replace('/*__SCRIPT__*/', () => js);
 
 mkdirSync('dist', { recursive: true });
 writeFileSync('dist/gusinjska-kocka.html', page);

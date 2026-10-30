@@ -1,4 +1,4 @@
-"""App icons and the two QR cards (Android, Windows) for Gusinjska kocka.
+"""App icons and the two QR cards (Android, Windows) for Gusinjska kocka, with the Xplore Prokletije logo in the middle.
 
 python3 tools/make_brand.py
 
@@ -24,12 +24,18 @@ CARDS = [  # file id, label under the name, link in the code
     ('windows', 'Windows', SITE + '?p=windows'),
 ]
 INK = '#0e2427'          # QR modules: very dark teal, scans like black
-CLEAR = 15               # modules left white in the middle for the Xplore Prokletije badge (of 41)
-BADGE = 13.4             # badge size in modules
+CLEAR_W, CLEAR_H = 21, 9  # modules left white in the middle for the Xplore Prokletije logo (of 41 x 41)
+LOGO_W = 19.4             # logo width in modules
+LOGO_INK, LOGO_ACC = '#0e2427', '#0b7b77'   # the logo in the game's colours: dark ink and teal
 
-RIDGE_BACK = 'M4 62 L38 34 L52 44 L80 14 L98 30 L112 22 L138 46 L160 26 L176 36 L198 18 L236 62'
-RIDGE_FRONT = 'M4 62 L30 48 L50 56 L74 38 L96 52 L120 34 L146 54 L170 42 L196 56 L236 62'
-RIDGE_SNOW = 'M72 20 L80 14 L88 22 M190 24 L198 18 L205 25'
+
+def logo_svg():
+    """(viewBox width, height, inner markup) of the traced logo, src/xp-logo.svg (tools/trace_logo.py)."""
+    import re
+    svg = open(os.path.join(ROOT, 'src', 'xp-logo.svg')).read()
+    w, h = (float(v) for v in re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg).groups())
+    inner = svg[svg.index('>') + 1:svg.rindex('</svg>')]
+    return w, h, inner
 
 
 def qr_matrix(text):
@@ -40,39 +46,26 @@ def qr_matrix(text):
     return [[bool(q.isDark(r, c)) for c in range(n)] for r in range(n)]
 
 
-def ridge(x, y, w, sw=1.0):
-    """The Xplore Prokletije ridge mark, w wide, top-left at (x, y)."""
-    s = w / 240
-    return (f'<g transform="translate({x:.3f} {y:.3f}) scale({s:.5f})" fill="none" stroke-linecap="round" stroke-linejoin="round">'
-            f'<path d="{RIDGE_BACK}" stroke="#8fb9ae" stroke-width="{4.2 * sw:.2f}"/>'
-            f'<path d="{RIDGE_FRONT}" stroke="#4fc3b5" stroke-width="{5.2 * sw:.2f}"/>'
-            f'<path d="{RIDGE_SNOW}" stroke="#ffffff" stroke-width="{5.2 * sw:.2f}"/></g>')
-
-
-def badge(cx, cy, b, gid):
-    """Xplore Prokletije badge, b wide, centred on (cx, cy). Units are QR modules."""
-    x, y = cx - b / 2, cy - b / 2
-    return (f'<defs><linearGradient id="{gid}" x1="0" y1="0" x2="0" y2="1">'
-            f'<stop offset="0" stop-color="#0e2427"/><stop offset="0.55" stop-color="#163a3b"/><stop offset="1" stop-color="#1f4a45"/></linearGradient></defs>'
-            f'<rect x="{x:.3f}" y="{y:.3f}" width="{b:.3f}" height="{b:.3f}" rx="{b * 0.17:.3f}" fill="url(#{gid})"/>'
-            + ridge(x + b * 0.15, y + b * 0.15, b * 0.70)
-            + f'<text x="{cx:.3f}" y="{y + b * 0.665:.3f}" text-anchor="middle" font-family="Marcellus" font-size="{b * 0.285:.3f}" fill="#efe9dc">Xplore</text>'
-            + f'<text x="{cx + b * 0.022:.3f}" y="{y + b * 0.835:.3f}" text-anchor="middle" font-family="Golos Text" font-weight="600" '
-              f'font-size="{b * 0.088:.3f}" letter-spacing="{b * 0.034:.3f}" fill="#a9d4ca">PROKLETIJE</text>')
+def logo(cx, cy, width):
+    """The Xplore Prokletije logo, `width` wide, centred on (cx, cy). Units are QR modules."""
+    w, h, inner = logo_svg()
+    hgt = width * h / w
+    return (f'<svg x="{cx - width / 2:.3f}" y="{cy - hgt / 2:.3f}" width="{width:.3f}" height="{hgt:.3f}" viewBox="0 0 {w:.0f} {h:.0f}" '
+            f'style="--lg-ink:{LOGO_INK};--lg-accent:{LOGO_ACC}">{inner}</svg>')
 
 
 def qr_svg(text, gid):
     m = qr_matrix(text)
     n = len(m)
-    lo = (n - CLEAR) // 2
-    hi = lo + CLEAR
+    r0, c0_ = (n - CLEAR_H) // 2, (n - CLEAR_W) // 2
+    clear = lambda r, c: r0 <= r < r0 + CLEAR_H and c0_ <= c < c0_ + CLEAR_W
     d = []
     for r in range(n):
         c = 0
         while c < n:
-            if m[r][c] and not (lo <= r < hi and lo <= c < hi):
+            if m[r][c] and not clear(r, c):
                 c0 = c
-                while c < n and m[r][c] and not (lo <= r < hi and lo <= c < hi):
+                while c < n and m[r][c] and not clear(r, c):
                     c += 1
                 d.append(f'M{c0} {r}h{c - c0}v1h{c0 - c}z')
             else:
@@ -81,7 +74,7 @@ def qr_svg(text, gid):
     return (f'<svg class="qr" viewBox="{-q} {-q} {n + 2 * q} {n + 2 * q}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
             f'<rect x="{-q}" y="{-q}" width="{n + 2 * q}" height="{n + 2 * q}" fill="#fff"/>'
             f'<path d="{"".join(d)}" fill="{INK}"/>'
-            f'<g shape-rendering="geometricPrecision">{badge(n / 2, n / 2, BADGE, gid)}</g></svg>'), n
+            f'<g shape-rendering="geometricPrecision">{logo(n / 2, n / 2, LOGO_W)}</g></svg>'), n
 
 
 def icon_svg(kind):
@@ -131,6 +124,8 @@ CSS = '''
 @font-face { font-family: 'Marcellus'; src: url('../tools/fonts/Marcellus-Regular.ttf'); }
 @font-face { font-family: 'Golos Text'; src: url('../tools/fonts/GolosText-VF.ttf'); font-weight: 400 900; }
 html, body { margin: 0; background: #fff; }
+.lg-ink { fill: var(--lg-ink); }
+.lg-acc { fill: var(--lg-accent); }
 .card { position: relative; width: 100em; height: 130em; background: #fff; color: #1a2928; overflow: hidden;
         display: flex; flex-direction: column; align-items: center; font-family: 'Golos Text', sans-serif; }
 .card .qr { display: block; width: 84em; height: 84em; margin-top: 5em; }
@@ -222,7 +217,7 @@ def check():
 
 if __name__ == '__main__':
     for cid, _, url in CARDS:
-        print(cid, url, f'-> QR version {(len(qr_matrix(url)) - 17) // 4}, error correction H, {CLEAR}x{CLEAR} modules under the badge')
+        print(cid, url, f'-> QR version {(len(qr_matrix(url)) - 17) // 4}, error correction H, {CLEAR_W}x{CLEAR_H} modules under the logo')
     asyncio.run(render())
     good = check()
     print('all codes decode' if good else 'SOME CODES DO NOT DECODE')
