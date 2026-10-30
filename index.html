@@ -229,9 +229,10 @@ button { font: inherit; color: inherit; }
       <div class="head">
         <div class="top-row">
           <p class="eyebrow">Xplore Prokletije</p>
-          <div class="lang" role="group" aria-label="Jezik / Language">
-            <button type="button" data-lang="me" aria-pressed="true">ME</button>
-            <button type="button" data-lang="en" aria-pressed="false">EN</button>
+          <div class="lang" role="group" aria-label="Jezik / Gjuha / Language">
+            <button type="button" data-lang="me" aria-pressed="true" lang="sr-Latn-ME" title="Crnogorski">ME</button>
+            <button type="button" data-lang="sq" aria-pressed="false" lang="sq" title="Shqip">SQ</button>
+            <button type="button" data-lang="en" aria-pressed="false" lang="en" title="English">EN</button>
           </div>
         </div>
         <h1 id="gameTitle">Gusinjska kocka</h1>
@@ -342,15 +343,15 @@ function fold(f, u, v, vu = 0, vv = 0) {
 // Building letters (footprint, solid) and their lower-case door tiles.
 // Building letters in the level maps. `id` is the model file in models/<id>.json + .jpg.
 const BUILDINGS = {
-  K: { id: 'kula-rasica', name: { me: 'Kula Rašića', en: 'Rašić Tower' } },
-  J: { id: 'sebilj', name: { me: 'Sebilj', en: 'Sebilj fountain' } },
-  N: { id: 'kula-nekovica', name: { me: 'Kula Nekovića', en: 'Neković Tower' } },
-  S: { id: 'sahat-kula', name: { me: 'Sahat kula', en: 'Clock Tower' } },
-  O: { id: 'opstina', name: { me: 'Opština Gusinje', en: 'Gusinje Municipality' } },
-  C: { id: 'cekica-dzamija', name: { me: 'Čekića džamija', en: 'Čekić Mosque' } },
-  V: { id: 'vezirova-dzamija', name: { me: 'Vezirova džamija', en: 'Vizier’s Mosque' } },
-  A: { id: 'sv-anton', name: { me: 'Crkva sv. Antona', en: 'St Anthony’s Church' } },
-  D: { id: 'sv-djordje', name: { me: 'Crkva sv. Đorđa', en: 'St George’s Church' } },
+  K: { id: 'kula-rasica', name: { me: 'Kula Rašića', sq: 'Kulla e Rashiqëve', en: 'Rašić Tower' } },
+  J: { id: 'sebilj', name: { me: 'Sebilj', sq: 'Sebili', en: 'Sebilj fountain' } },
+  N: { id: 'kula-nekovica', name: { me: 'Kula Nekovića', sq: 'Kulla e Nekoviqëve', en: 'Neković Tower' } },
+  S: { id: 'sahat-kula', name: { me: 'Sahat kula', sq: 'Kulla e Sahatit', en: 'Clock Tower' } },
+  O: { id: 'opstina', name: { me: 'Opština Gusinje', sq: 'Komuna e Gucisë', en: 'Gusinje Municipality' } },
+  C: { id: 'cekica-dzamija', name: { me: 'Čekića džamija', sq: 'Xhamia e Çekiqëve', en: 'Čekić Mosque' } },
+  V: { id: 'vezirova-dzamija', name: { me: 'Vezirova džamija', sq: 'Xhamia e Vezirit', en: 'Vizier’s Mosque' } },
+  A: { id: 'sv-anton', name: { me: 'Crkva sv. Antona', sq: 'Kisha e Shën Ndout', en: 'St Anthony’s Church' } },
+  D: { id: 'sv-djordje', name: { me: 'Crkva sv. Đorđa', sq: 'Kisha e Shën Gjergjit', en: 'St George’s Church' } },
 };
 const isBuildingChar = (c) => !!BUILDINGS[c];
 const isDoorChar = (c) => !!BUILDINGS[c.toUpperCase()] && c !== c.toUpperCase();
@@ -366,7 +367,7 @@ const DECOR = [
 
 const LEVELS = [
   {
-    key: 'kula', name: { me: 'Kula', en: 'The Tower' },
+    key: 'kula', name: { me: 'Kula', sq: 'Kulla', en: 'The Tower' },
     faces: {
       top: [
         '#########',
@@ -393,7 +394,7 @@ const LEVELS = [
     },
   },
   {
-    key: 'izvori', name: { me: 'Izvori', en: 'The Springs' },
+    key: 'izvori', name: { me: 'Izvori', sq: 'Burimet', en: 'The Springs' },
     faces: {
       top: [
         '#########',
@@ -431,7 +432,7 @@ const LEVELS = [
     },
   },
   {
-    key: 'kocka', name: { me: 'Cijela kocka', en: 'Round the Cube' },
+    key: 'kocka', name: { me: 'Cijela kocka', sq: 'Rreth kubit', en: 'Round the Cube' },
     faces: {
       left: [
         '####.####',
@@ -502,7 +503,7 @@ const LEVELS = [
     },
   },
   {
-    key: 'bogomolje', name: { me: 'Bogomolje', en: 'Places of Worship' },
+    key: 'bogomolje', name: { me: 'Bogomolje', sq: 'Faltoret', en: 'Places of Worship' },
     faces: {
       top: [
         '#########',
@@ -551,7 +552,7 @@ const LEVELS = [
     },
   },
   {
-    key: 'gusinje', name: { me: 'Gusinje', en: 'Gusinje' },
+    key: 'gusinje', name: { me: 'Gusinje', sq: 'Gucia', en: 'Gusinje' },
     faces: {
       top: [
         '#########',
@@ -1416,6 +1417,23 @@ const TXT = {
     noGL: 'Ovaj preglednik ne može prikazati 3D. Probaj u Chromeu ili Safariju.',
     keys: 'Tastatura: strelice naginju, Q i E okreću, razmak poravnava.',
   },
+  sq: {
+    tagline: 'Anoje kubin dhe rrokullise topin deri te ndërtesat e Gucisë.',
+    play: 'Luaj', level: 'Niveli', locked: 'E kyçur', best: 'Rekordi',
+    hint: 'Rrëshqit gishtin nëpër ekran. Kubi anohet dhe topi rrokulliset tatëpjetë.',
+    goal: 'Çoje topin te dera e çdo ndërtese.',
+    visited: 'Vizituar', splash: 'Pllum! Provo përsëri.',
+    complete: 'Bravo!', time: 'Koha', next: 'Niveli tjetër', again: 'Përsëri', levels: 'Nivelet',
+    spinL: 'Rrotullo kubin majtas', spinR: 'Rrotullo kubin djathtas', flat: 'Drejto', flatLabel: 'Drejto faqen ku është topi',
+    restart: 'Fillo nga e para', soundOn: 'Fik zërin', soundOff: 'Ndiz zërin', menu: 'Nivelet',
+    note: 'Tregime të shkurtra për ndërtesat vijnë së shpejti.',
+    stub: 'Një tregim i shkurtër për këtë ndërtesë vjen së shpejti.',
+    loading: 'Po ngarkohen modelet 3D… {n}/{t}',
+    loadFail: 'Disa modele nuk u ngarkuan. Kontrollo internetin dhe rifresko faqen.',
+    par: 'Tri yje: deri në {par} s', newBest: 'Rekord i ri', allDone: 'I përfundove të gjitha nivelet.',
+    noGL: 'Ky shfletues nuk mund të shfaqë 3D. Provo në Chrome ose Safari.',
+    keys: 'Tastiera: shigjetat e anojnë kubin, Q dhe E e rrotullojnë, hapësira e drejton.',
+  },
   en: {
     tagline: 'Tilt the cube and roll the ball to the landmarks of Gusinje.',
     play: 'Play', level: 'Level', locked: 'Locked', best: 'Best',
@@ -1440,7 +1458,9 @@ const STORE = 'gusinjska-kocka/v1';
 function loadSave() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } }
 function writeSave() { try { localStorage.setItem(STORE, JSON.stringify(save)); } catch { /* storage unavailable */ } }
 const save = Object.assign({ done: {}, muted: false, lang: null }, loadSave());
-let lang = save.lang || (/^(sr|bs|hr|me|cnr|sh)/i.test(navigator.language || '') ? 'me' : 'en');
+const LANGS = ['me', 'sq', 'en'];
+const browserLang = (navigator.language || '').toLowerCase();
+let lang = LANGS.includes(save.lang) ? save.lang : /^(sr|bs|hr|me|cnr|sh)/.test(browserLang) ? 'me' : /^(sq|als|aln)/.test(browserLang) ? 'sq' : 'en';
 const t = (k) => TXT[lang][k];
 
 // ---------- colours of the little world ----------
@@ -1720,7 +1740,7 @@ function renderTitle() {
   $('tagline').textContent = t('tagline');
   updateLoadNote();
   $('keys').textContent = t('keys');
-  document.documentElement.lang = lang === 'me' ? 'sr-Latn-ME' : 'en';
+  document.documentElement.lang = { me: 'sr-Latn-ME', sq: 'sq', en: 'en' }[lang];
   document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   els.levels.innerHTML = '';
   LEVELS.forEach((L, k) => {

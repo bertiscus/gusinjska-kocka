@@ -22,6 +22,23 @@ const TXT = {
     noGL: 'Ovaj preglednik ne može prikazati 3D. Probaj u Chromeu ili Safariju.',
     keys: 'Tastatura: strelice naginju, Q i E okreću, razmak poravnava.',
   },
+  sq: {
+    tagline: 'Anoje kubin dhe rrokullise topin deri te ndërtesat e Gucisë.',
+    play: 'Luaj', level: 'Niveli', locked: 'E kyçur', best: 'Rekordi',
+    hint: 'Rrëshqit gishtin nëpër ekran. Kubi anohet dhe topi rrokulliset tatëpjetë.',
+    goal: 'Çoje topin te dera e çdo ndërtese.',
+    visited: 'Vizituar', splash: 'Pllum! Provo përsëri.',
+    complete: 'Bravo!', time: 'Koha', next: 'Niveli tjetër', again: 'Përsëri', levels: 'Nivelet',
+    spinL: 'Rrotullo kubin majtas', spinR: 'Rrotullo kubin djathtas', flat: 'Drejto', flatLabel: 'Drejto faqen ku është topi',
+    restart: 'Fillo nga e para', soundOn: 'Fik zërin', soundOff: 'Ndiz zërin', menu: 'Nivelet',
+    note: 'Tregime të shkurtra për ndërtesat vijnë së shpejti.',
+    stub: 'Një tregim i shkurtër për këtë ndërtesë vjen së shpejti.',
+    loading: 'Po ngarkohen modelet 3D… {n}/{t}',
+    loadFail: 'Disa modele nuk u ngarkuan. Kontrollo internetin dhe rifresko faqen.',
+    par: 'Tri yje: deri në {par} s', newBest: 'Rekord i ri', allDone: 'I përfundove të gjitha nivelet.',
+    noGL: 'Ky shfletues nuk mund të shfaqë 3D. Provo në Chrome ose Safari.',
+    keys: 'Tastiera: shigjetat e anojnë kubin, Q dhe E e rrotullojnë, hapësira e drejton.',
+  },
   en: {
     tagline: 'Tilt the cube and roll the ball to the landmarks of Gusinje.',
     play: 'Play', level: 'Level', locked: 'Locked', best: 'Best',
@@ -46,7 +63,9 @@ const STORE = 'gusinjska-kocka/v1';
 function loadSave() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } }
 function writeSave() { try { localStorage.setItem(STORE, JSON.stringify(save)); } catch { /* storage unavailable */ } }
 const save = Object.assign({ done: {}, muted: false, lang: null }, loadSave());
-let lang = save.lang || (/^(sr|bs|hr|me|cnr|sh)/i.test(navigator.language || '') ? 'me' : 'en');
+const LANGS = ['me', 'sq', 'en'];
+const browserLang = (navigator.language || '').toLowerCase();
+let lang = LANGS.includes(save.lang) ? save.lang : /^(sr|bs|hr|me|cnr|sh)/.test(browserLang) ? 'me' : /^(sq|als|aln)/.test(browserLang) ? 'sq' : 'en';
 const t = (k) => TXT[lang][k];
 
 // ---------- colours of the little world ----------
@@ -326,7 +345,7 @@ function renderTitle() {
   $('tagline').textContent = t('tagline');
   updateLoadNote();
   $('keys').textContent = t('keys');
-  document.documentElement.lang = lang === 'me' ? 'sr-Latn-ME' : 'en';
+  document.documentElement.lang = { me: 'sr-Latn-ME', sq: 'sq', en: 'en' }[lang];
   document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   els.levels.innerHTML = '';
   LEVELS.forEach((L, k) => {

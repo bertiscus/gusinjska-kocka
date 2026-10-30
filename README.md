@@ -2,6 +2,8 @@
 
 A tilt-maze game on a six-sided cube. Tilt the cube, roll the ball through a maze that wraps around all six faces, and visit the buildings of Gusinje by rolling the ball to their doors. Part of Xplore Prokletije.
 
+**Languages:** Montenegrin, Albanian and English (switch on the start screen; picked from the phone's language the first time).
+
 **Levels:** 1 Kula, 2 Izvori, 3 Cijela kocka, 4 Bogomolje, 5 Gusinje (all nine buildings).
 
 **Play:** open `index.html` (or the GitHub Pages site for this repo) on a phone and drag across the screen to tilt the cube.
@@ -18,7 +20,7 @@ The buildings are our own 3D models, reduced to light game versions with their p
 | `src/core.js` | Levels, ball physics, crossing between faces, game rules, autopilot |
 | `src/render.js` | Small WebGL renderer and mesh builder |
 | `src/sound.js` | All sound effects, made in the browser (no audio files): chimes in one pentatonic key, rolling, knocks, splash, wind and birds |
-| `src/main.js` | Scene, model loading, controls, menus, ME/EN text |
+| `src/main.js` | Scene, model loading, controls, menus, all game text (ME / SQ / EN) |
 | `src/page.html` | Page layout and styles |
 | `build.mjs` | Bundles `src/` into `index.html` |
 | `test/core.test.mjs` | Checks edge crossing, level maps, that the autopilot finishes every level, and a 400-second random-tilt test |

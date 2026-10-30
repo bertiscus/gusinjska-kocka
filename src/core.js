@@ -69,15 +69,15 @@ export function fold(f, u, v, vu = 0, vv = 0) {
 // Building letters (footprint, solid) and their lower-case door tiles.
 // Building letters in the level maps. `id` is the model file in models/<id>.json + .jpg.
 export const BUILDINGS = {
-  K: { id: 'kula-rasica', name: { me: 'Kula Rašića', en: 'Rašić Tower' } },
-  J: { id: 'sebilj', name: { me: 'Sebilj', en: 'Sebilj fountain' } },
-  N: { id: 'kula-nekovica', name: { me: 'Kula Nekovića', en: 'Neković Tower' } },
-  S: { id: 'sahat-kula', name: { me: 'Sahat kula', en: 'Clock Tower' } },
-  O: { id: 'opstina', name: { me: 'Opština Gusinje', en: 'Gusinje Municipality' } },
-  C: { id: 'cekica-dzamija', name: { me: 'Čekića džamija', en: 'Čekić Mosque' } },
-  V: { id: 'vezirova-dzamija', name: { me: 'Vezirova džamija', en: 'Vizier’s Mosque' } },
-  A: { id: 'sv-anton', name: { me: 'Crkva sv. Antona', en: 'St Anthony’s Church' } },
-  D: { id: 'sv-djordje', name: { me: 'Crkva sv. Đorđa', en: 'St George’s Church' } },
+  K: { id: 'kula-rasica', name: { me: 'Kula Rašića', sq: 'Kulla e Rashiqëve', en: 'Rašić Tower' } },
+  J: { id: 'sebilj', name: { me: 'Sebilj', sq: 'Sebili', en: 'Sebilj fountain' } },
+  N: { id: 'kula-nekovica', name: { me: 'Kula Nekovića', sq: 'Kulla e Nekoviqëve', en: 'Neković Tower' } },
+  S: { id: 'sahat-kula', name: { me: 'Sahat kula', sq: 'Kulla e Sahatit', en: 'Clock Tower' } },
+  O: { id: 'opstina', name: { me: 'Opština Gusinje', sq: 'Komuna e Gucisë', en: 'Gusinje Municipality' } },
+  C: { id: 'cekica-dzamija', name: { me: 'Čekića džamija', sq: 'Xhamia e Çekiqëve', en: 'Čekić Mosque' } },
+  V: { id: 'vezirova-dzamija', name: { me: 'Vezirova džamija', sq: 'Xhamia e Vezirit', en: 'Vizier’s Mosque' } },
+  A: { id: 'sv-anton', name: { me: 'Crkva sv. Antona', sq: 'Kisha e Shën Ndout', en: 'St Anthony’s Church' } },
+  D: { id: 'sv-djordje', name: { me: 'Crkva sv. Đorđa', sq: 'Kisha e Shën Gjergjit', en: 'St George’s Church' } },
 };
 export const isBuildingChar = (c) => !!BUILDINGS[c];
 export const isDoorChar = (c) => !!BUILDINGS[c.toUpperCase()] && c !== c.toUpperCase();
@@ -93,7 +93,7 @@ const DECOR = [
 
 export const LEVELS = [
   {
-    key: 'kula', name: { me: 'Kula', en: 'The Tower' },
+    key: 'kula', name: { me: 'Kula', sq: 'Kulla', en: 'The Tower' },
     faces: {
       top: [
         '#########',
@@ -120,7 +120,7 @@ export const LEVELS = [
     },
   },
   {
-    key: 'izvori', name: { me: 'Izvori', en: 'The Springs' },
+    key: 'izvori', name: { me: 'Izvori', sq: 'Burimet', en: 'The Springs' },
     faces: {
       top: [
         '#########',
@@ -158,7 +158,7 @@ export const LEVELS = [
     },
   },
   {
-    key: 'kocka', name: { me: 'Cijela kocka', en: 'Round the Cube' },
+    key: 'kocka', name: { me: 'Cijela kocka', sq: 'Rreth kubit', en: 'Round the Cube' },
     faces: {
       left: [
         '####.####',
@@ -229,7 +229,7 @@ export const LEVELS = [
     },
   },
   {
-    key: 'bogomolje', name: { me: 'Bogomolje', en: 'Places of Worship' },
+    key: 'bogomolje', name: { me: 'Bogomolje', sq: 'Faltoret', en: 'Places of Worship' },
     faces: {
       top: [
         '#########',
@@ -278,7 +278,7 @@ export const LEVELS = [
     },
   },
   {
-    key: 'gusinje', name: { me: 'Gusinje', en: 'Gusinje' },
+    key: 'gusinje', name: { me: 'Gusinje', sq: 'Gucia', en: 'Gusinje' },
     faces: {
       top: [
         '#########',
