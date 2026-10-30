@@ -1,6 +1,7 @@
 // ===== Gusinjska kocka — scene, input and screens =====
 import { N, H, BALL_R, FACES, LEVELS, PARS, BUILDINGS, parseLevel, Game, makeAutopilot, tileU, tileV, isSolidChar, isDoorChar, isBuildingChar, v3, stars, facePoint } from './core.js';
 import { q, m4, MeshBuilder, Renderer, hex, jitter, shade, mulberry } from './render.js';
+import { SoundKit } from './sound.js';
 
 // ---------- text ----------
 const TXT = {
@@ -218,33 +219,21 @@ const els = {
   levels: $('levels'), nogl: $('nogl'),
 };
 
-// ---------- sound (synthesised, starts after the first tap) ----------
+// ---------- sound (see sound.js; starts after the first tap, as browsers require) ----------
 const audio = {
-  ctx: null, lastBump: 0,
-  init() { if (this.ctx) return; try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { this.ctx = null; } },
-  tone(freq, dur, type = 'sine', gain = 0.12, when = 0) {
-    if (!this.ctx || save.muted) return;
-    const c = this.ctx, o = c.createOscillator(), g = c.createGain(), t0 = c.currentTime + when;
-    o.type = type; o.frequency.setValueAtTime(freq, t0);
-    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(gain, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+  kit: null,
+  init() {
+    if (this.kit) { if (this.kit.c.state === 'suspended') this.kit.c.resume(); return; }
+    try { this.kit = new SoundKit(new (window.AudioContext || window.webkitAudioContext)()); this.kit.setMuted(!!save.muted); }
+    catch { this.kit = null; }
   },
-  chime() { this.tone(784, 0.5, 'sine', 0.12); this.tone(1175, 0.7, 'sine', 0.09, 0.09); },
-  fanfare() { [523, 659, 784, 1047].forEach((f, k) => this.tone(f, 0.55, 'triangle', 0.08, k * 0.11)); },
-  bump(v) {
-    if (!this.ctx || save.muted) return;
-    const now = performance.now(); if (now - this.lastBump < 70) return; this.lastBump = now;
-    this.tone(150 + Math.random() * 40, 0.06, 'triangle', Math.min(0.14, v * 0.025));
-  },
-  splash() {
-    if (!this.ctx || save.muted) return;
-    const c = this.ctx, len = Math.floor(c.sampleRate * 0.45), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
-    const s = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain();
-    s.buffer = buf; fl.type = 'lowpass'; fl.frequency.setValueAtTime(2400, c.currentTime); fl.frequency.exponentialRampToValueAtTime(300, c.currentTime + 0.4);
-    g.gain.value = 0.22; s.connect(fl).connect(g).connect(c.destination); s.start();
-  },
+  play(name, ...args) { if (!this.kit || save.muted) return; try { this.kit[name](...args); } catch { /* ignore */ } },
 };
+document.addEventListener('pointerdown', () => audio.init(), { capture: true });
+document.addEventListener('visibilitychange', () => {
+  const c = audio.kit && audio.kit.c; if (!c) return;
+  if (document.hidden) c.suspend(); else c.resume();
+});
 const buzz = (ms) => { try { navigator.vibrate?.(ms); } catch { /* not allowed here */ } };
 
 // ---------- state ----------
@@ -350,7 +339,7 @@ function renderTitle() {
     btn.children[1].textContent = L.name[lang];
     btn.children[2].textContent = !open ? t('locked') : rec ? `${starRow(rec.stars)} · ${rec.best.toFixed(1)} s` : starRow(0);
     btn.setAttribute('aria-label', `${t('level')} ${k + 1}: ${L.name[lang]}. ${btn.children[2].textContent}`);
-    btn.addEventListener('click', () => { levelIndex = k; startLevel(k, 'title'); });
+    btn.addEventListener('click', () => { levelIndex = k; startLevel(k, 'title'); audio.play('click'); });
     els.levels.appendChild(btn);
   });
   $('btnPlay').textContent = `${t('play')} · ${t('level')} ${levelIndex + 1}`;
@@ -372,7 +361,14 @@ function showDone(time) {
   writeSave();
   $('doneLevel').textContent = `${t('level')} ${levelIndex + 1} · ${L.name[lang]}`;
   $('doneTitle').textContent = t('complete');
-  $('doneStars').textContent = starRow(s);
+  $('doneStars').innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const sp = document.createElement('span');
+    sp.textContent = '★'; sp.className = i < s ? 'on' : 'off';
+    sp.style.animationDelay = `${0.25 + i * 0.28}s`;
+    $('doneStars').appendChild(sp);
+    if (i < s) audio.play('star', i, 0.25 + i * 0.28);
+  }
   $('doneStars').setAttribute('aria-label', `${s} / 3`);
   $('doneTimeLabel').textContent = t('time'); $('doneBestLabel').textContent = t('best');
   $('doneTime').textContent = `${time.toFixed(1)} s`;
@@ -392,19 +388,22 @@ function showDone(time) {
 function handleEvents(ev) {
   for (const e of ev) {
     if (e.type === 'visit') {
-      audio.chime(); buzz(25);
+      audio.play('visit', e.count); buzz(25);
       showToast(e.building.name[lang], `${t('visited')} ${e.count}/${e.total}`, t('stub'));
       renderHud();
     } else if (e.type === 'complete') {
-      audio.fanfare(); buzz([30, 60, 30]);
+      audio.play('complete'); buzz([30, 60, 30]);
       completeTimer = 1.1;
     } else if (e.type === 'sink') {
-      audio.splash(); buzz(70);
+      audio.play('splash'); buzz(70);
       showToast(t('splash'), '', '', 1600);
     } else if (e.type === 'respawn') {
       respawnT = 0; lastBallPos = null;
+      audio.play('respawn');
+    } else if (e.type === 'cross') {
+      audio.play('cross');
     } else if (e.type === 'bump') {
-      audio.bump(e.speed);
+      audio.play('bump', e.speed, e.tree);
       if (e.speed > 3) buzz(12);
     }
   }
@@ -443,25 +442,25 @@ els.gl.addEventListener('pointercancel', endDrag);
 window.addEventListener('keydown', (e) => {
   if (screen !== 'play') return;
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { keys.add(e.key); e.preventDefault(); }
-  else if (e.key === 'q' || e.key === 'Q') spin(1);
-  else if (e.key === 'e' || e.key === 'E') spin(-1);
-  else if (e.key === ' ') { levelBallFace(); e.preventDefault(); }
+  else if (e.key === 'q' || e.key === 'Q') { spin(1); audio.play('spin'); }
+  else if (e.key === 'e' || e.key === 'E') { spin(-1); audio.play('spin'); }
+  else if (e.key === ' ') { levelBallFace(); audio.play('level'); e.preventDefault(); }
 });
 window.addEventListener('keyup', (e) => keys.delete(e.key));
 window.addEventListener('blur', () => keys.clear());
 
-$('btnSpinL').addEventListener('click', () => spin(1));
-$('btnSpinR').addEventListener('click', () => spin(-1));
-$('btnFlat').addEventListener('click', levelBallFace);
-$('btnRestart').addEventListener('click', () => startLevel(levelIndex, 'play'));
-$('btnMenu').addEventListener('click', () => setScreen('title'));
-$('btnSound').addEventListener('click', () => { audio.init(); save.muted = !save.muted; writeSave(); updateSoundBtn(); });
-$('btnPlay').addEventListener('click', () => { audio.init(); startLevel(levelIndex, 'play'); });
-$('btnNext').addEventListener('click', () => { startLevel(Math.min(levelIndex + 1, LEVELS.length - 1), 'play'); });
-$('btnAgain').addEventListener('click', () => startLevel(levelIndex, 'play'));
-$('btnLevels').addEventListener('click', () => { setScreen('title'); });
+$('btnSpinL').addEventListener('click', () => { spin(1); audio.play('spin'); });
+$('btnSpinR').addEventListener('click', () => { spin(-1); audio.play('spin'); });
+$('btnFlat').addEventListener('click', () => { levelBallFace(); audio.play('level'); });
+$('btnRestart').addEventListener('click', () => { startLevel(levelIndex, 'play'); audio.play('go'); });
+$('btnMenu').addEventListener('click', () => { setScreen('title'); audio.play('click'); });
+$('btnSound').addEventListener('click', () => { audio.init(); save.muted = !save.muted; writeSave(); updateSoundBtn(); if (audio.kit) audio.kit.setMuted(save.muted); audio.play('click'); });
+$('btnPlay').addEventListener('click', () => { audio.init(); startLevel(levelIndex, 'play'); audio.play('go'); });
+$('btnNext').addEventListener('click', () => { startLevel(Math.min(levelIndex + 1, LEVELS.length - 1), 'play'); audio.play('go'); });
+$('btnAgain').addEventListener('click', () => { startLevel(levelIndex, 'play'); audio.play('go'); });
+$('btnLevels').addEventListener('click', () => { setScreen('title'); audio.play('click'); });
 document.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => {
-  lang = b.dataset.lang; save.lang = lang; writeSave(); renderTitle(); renderHud();
+  lang = b.dataset.lang; save.lang = lang; writeSave(); renderTitle(); renderHud(); audio.play('click');
 }));
 
 // ---------- backdrop: Prokletije ridges ----------
@@ -573,6 +572,11 @@ function frame(now) {
     handleEvents(ev);
   }
   visOff = v3.scale(visOff, Math.exp(-real * 22));
+  if (audio.kit) {
+    const bb = game.ball, rolling = screen === 'play' && game.phase === 'play' && !save.muted;
+    audio.kit.roll(rolling ? Math.hypot(bb.vu, bb.vv) : 0);
+    audio.kit.tick(real);
+  }
   if (respawnT < 1) respawnT = Math.min(1, respawnT + real / 0.28);
   if (completeTimer > 0) { completeTimer -= real; if (completeTimer <= 0) showDone(game.time); }
   if (toastTimer > 0) { toastTimer -= real; if (toastTimer <= 0) els.toast.hidden = true; }
@@ -653,6 +657,6 @@ function boot(data = {}) {
 window.__gk = {
   get game() { return game; }, get screen() { return screen; }, get Q() { return Q; },
   startLevel, setDemo(v) { demo = v; }, setTimeScale(v) { timeScale = v; },
-  tilt: tiltBy,
+  tilt: tiltBy, SoundKit, get audio() { return audio; },
 };
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});

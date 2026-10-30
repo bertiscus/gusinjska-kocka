@@ -473,6 +473,7 @@ function collide(level, b) {
   const S = (i, j) => isSolidChar(level.ufChar(b.f, i, j));
   const uMin = ti - H, uMax = uMin + 1, vMax = H - tj, vMin = vMax - 1;
   let hit = 0;
+  b._tree = 0;
   if (S(ti, tj)) return -1; // inside a solid tile: caller restores
   if (S(ti - 1, tj) && b.u - r < uMin) { b.u = uMin + r; if (b.vu < 0) { hit = Math.max(hit, -b.vu); b.vu = -b.vu * B; } }
   if (S(ti + 1, tj) && b.u + r > uMax) { b.u = uMax - r; if (b.vu > 0) { hit = Math.max(hit, b.vu); b.vu = -b.vu * B; } }
@@ -485,7 +486,8 @@ function collide(level, b) {
   }
   for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
     if (level.ufChar(b.f, ti + di, tj + dj) !== 'T') continue;
-    hit = Math.max(hit, pushFromPoint(b, tileU(ti + di), tileV(tj + dj), r + TREE_R));
+    const th = pushFromPoint(b, tileU(ti + di), tileV(tj + dj), r + TREE_R);
+    if (th > hit) { hit = th; b._tree = 1; }
   }
   return hit;
 }
@@ -519,7 +521,7 @@ export function stepBall(level, b, g, dt, events) {
   b.u += b.vu * dt; b.v += b.vv * dt;
   const hit = collide(level, b);
   if (hit < 0) { b.u = pu; b.v = pv; b.vu = 0; b.vv = 0; }
-  else if (hit > 1.2 && events) events.push({ type: 'bump', speed: hit });
+  else if (hit > 1.2 && events) events.push({ type: 'bump', speed: hit, tree: !!b._tree });
   if (Math.abs(b.u) > H || Math.abs(b.v) > H) {
     const r = fold(b.f, b.u, b.v, b.vu, b.vv);
     if (!r) { b.u = pu; b.v = pv; b.vu = 0; b.vv = 0; return; }

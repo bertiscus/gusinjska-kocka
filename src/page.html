@@ -157,6 +157,10 @@ button { font: inherit; color: inherit; }
 @media (hover: none) { .keys { display: none; } }
 
 .stars { font-size: 2.1rem; letter-spacing: 0.12em; color: var(--gold); line-height: 1; }
+.stars span { display: inline-block; }
+.stars .off { color: rgba(26, 41, 40, 0.22); }
+.stars .on { animation: star-pop 0.5s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes star-pop { from { transform: scale(0.2) rotate(-20deg); opacity: 0; } }
 .stats { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .stats div { background: var(--stele); border-radius: 12px; padding: 9px 12px; }
 .stats dt { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); }
@@ -172,7 +176,7 @@ button { font: inherit; color: inherit; }
   .card { margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .toast.is-in, .finger::before { animation: none; }
+  .toast.is-in, .finger::before, .stars .on { animation: none; }
 }
 </style>
 

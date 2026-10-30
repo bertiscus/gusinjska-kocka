@@ -5,7 +5,7 @@ const strip = (src) => src
   .replace(/^import[^;]*;\s*$/gm, '')
   .replace(/^export (const|function|class|let) /gm, '$1 ');
 
-const js = ['core.js', 'render.js', 'main.js'].map((f) => `// ---- ${f} ----\n` + strip(readFileSync(`src/${f}`, 'utf8'))).join('\n');
+const js = ['core.js', 'render.js', 'sound.js', 'main.js'].map((f) => `// ---- ${f} ----\n` + strip(readFileSync(`src/${f}`, 'utf8'))).join('\n');
 const page = readFileSync('src/page.html', 'utf8').replace('/*__SCRIPT__*/', () => js);
 
 mkdirSync('dist', { recursive: true });

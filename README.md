@@ -17,7 +17,8 @@ The buildings are our own 3D models, reduced to light game versions with their p
 | `tools/` | Turns a scanned OBJ + texture into a game model (`convert.py`, `decimate.mjs`, `models.json`) |
 | `src/core.js` | Levels, ball physics, crossing between faces, game rules, autopilot |
 | `src/render.js` | Small WebGL renderer and mesh builder |
-| `src/main.js` | Scene, model loading, controls, menus, sound, ME/EN text |
+| `src/sound.js` | All sound effects, made in the browser (no audio files): chimes in one pentatonic key, rolling, knocks, splash, wind and birds |
+| `src/main.js` | Scene, model loading, controls, menus, ME/EN text |
 | `src/page.html` | Page layout and styles |
 | `build.mjs` | Bundles `src/` into `index.html` |
 | `test/core.test.mjs` | Checks edge crossing, level maps, that the autopilot finishes every level, and a 400-second random-tilt test |
