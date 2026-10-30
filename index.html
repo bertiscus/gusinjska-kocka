@@ -2326,18 +2326,75 @@ const now = () => (typeof performance !== 'undefined' ? performance.now() : Date
 
 return { Tracker, projectedBox };
 })();
+// ---- src/ar/calib.js ----
+__mods["src/ar/calib.js"] = (() => {
+// Camera field of view learned from the cube itself, and pose quality judged relative to the cube's size.
+// Phones differ a lot: some give the browser a cropped (zoomed) camera picture, some a wide one.
+// When two or more faces are visible, the right field of view is the one that makes the rigid cube fit best.
+const { refinePose, reprojErrors } = __mods["src/ar/pose.js"];
+const FOV_MIN = 15, FOV_MAX = 90;
+
+function intrinsicsFor(fov, vw, vh) {
+  const f = (Math.max(vw, vh) / 2) / Math.tan(fov * Math.PI / 360);
+  return { fx: f, fy: f, cx: vw / 2, cy: vh / 2, vw, vh };
+}
+
+// RMS reprojection error (px) of the best pose for one field of view, starting from a pose found with K0.
+function rmsForFov(fov, R, t, K0, obj, img) {
+  const K = intrinsicsFor(fov, K0.vw, K0.vh), s = K.fx / K0.fx;
+  const p = refinePose(R, [t[0] * s, t[1] * s, t[2] * s], obj, img, K, { iters: 12 });
+  const e = reprojErrors(p.R, p.t, K, obj, img);
+  return Math.sqrt(e.reduce((a, x) => a + x * x, 0) / e.length);
+}
+
+// Field of view (degrees) that fits these correspondences best, or null when the fit is not informative.
+function estimateFov(R, t, K0, obj, img) {
+  let lo = FOV_MIN, hi = FOV_MAX;
+  const g = 0.381966;
+  let a = lo + g * (hi - lo), b = hi - g * (hi - lo);
+  let fa = rmsForFov(a, R, t, K0, obj, img), fb = rmsForFov(b, R, t, K0, obj, img);
+  for (let i = 0; i < 18; i++) {
+    if (fa < fb) { hi = b; b = a; fb = fa; a = lo + g * (hi - lo); fa = rmsForFov(a, R, t, K0, obj, img); }
+    else { lo = a; a = b; fa = fb; b = hi - g * (hi - lo); fb = rmsForFov(b, R, t, K0, obj, img); }
+  }
+  const fov = (lo + hi) / 2;
+  if (fov < FOV_MIN + 1 || fov > FOV_MAX - 1) return null;          // ran into the limits: not trustworthy
+  return { fov, rms: Math.min(fa, fb) };
+}
+
+// Is a solved pose good enough to show? Close up, a few pixels of error are invisible, so the limit
+// grows with the size of the cube on screen.
+function poseIsGood(p, sizeMm, K) {
+  if (!p || p.ambiguous) return false;
+  const sizePx = sizeMm * K.fx / Math.max(50, p.t[2]);
+  return p.rms < 3.5 || p.rms < (p.n >= 2 ? 0.045 : 0.02) * sizePx;
+}
+
+const median = (xs) => { const s = xs.slice().sort((a, b) => a - b); return s[s.length >> 1]; };
+
+return { FOV_MIN, intrinsicsFor, rmsForFov, estimateFov, poseIsGood, median };
+})();
 // ---- src/ar/session.js ----
 __mods["src/ar/session.js"] = (() => {
 // AR session: phone camera -> marker tracking -> smoothed pose of the printed cube (or the flat card),
 // plus "up" from the phone's tilt sensor. Tracking logic follows the ar-cube viewer (wave84mn/ar-cube).
 const { Tracker, projectedBox } = __mods["src/ar/tracker.js"];
-const { OneEuro, matToQuat, quatToMat, mulv } = __mods["src/ar/pose.js"];
+const { OneEuro, matToQuat, quatToMat } = __mods["src/ar/pose.js"];
+const { estimateFov, poseIsGood, intrinsicsFor, median } = __mods["src/ar/calib.js"];
+const FOV_KEY = 'gusinjska-kocka/ar-fov';
+const HOLD = 0.6;                         // keep showing the last pose this long when the cube is briefly lost (s)
+
 const D2R = Math.PI / 180;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
 class ArSession {
   constructor(opts = {}) {
-    this.fov = opts.fov || 66;            // camera field of view along the long side (degrees)
+    // Camera field of view along the long side of the image (degrees). Learned from the cube unless fixed by ?fov=.
+    this.fovFixed = !!opts.fov;
+    this.fov = opts.fov || 66;
+    this.fovSource = opts.fov ? 'set' : 'default';
+    this.fovSamples = []; this.fovTick = 0; this.fovSavedAt = 0; this.fovDims = '';
+    this.camInfo = '';
     this.layoutUrl = opts.layoutUrl || 'ar/layout.json';
     this.video = document.createElement('video');
     this.video.setAttribute('playsinline', ''); this.video.muted = true; this.video.autoplay = true;
@@ -2379,6 +2436,7 @@ class ArSession {
       throw Object.assign(new Error(String(e && e.message || e)), { code: name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : name === 'NotFoundError' || name === 'OverconstrainedError' ? 'nocamera' : 'failed' });
     }
     this.stream = stream;
+    await this._widestZoom(stream);
     this.video.srcObject = stream;
     try { await this.video.play(); } catch { /* autoplay with muted video normally succeeds */ }
     if (layoutP) this.tracker = new Tracker(await layoutP);
@@ -2393,6 +2451,69 @@ class ArSession {
     this.stream = null; this.video.srcObject = null;
     this.active = null; this.pose = null;
     window.removeEventListener('deviceorientation', this._onOrient);
+  }
+
+  // Some phones hand the browser a zoomed-in picture; ask for the widest the camera allows.
+  async _widestZoom(stream) {
+    try {
+      const track = stream.getVideoTracks()[0];
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      const set = track.getSettings ? track.getSettings() : {};
+      if (caps.zoom && typeof set.zoom === 'number' && set.zoom > caps.zoom.min + 1e-3) {
+        await track.applyConstraints({ advanced: [{ zoom: caps.zoom.min }] });
+      }
+      const s2 = track.getSettings ? track.getSettings() : {};
+      this.camInfo = `${s2.width || '?'}x${s2.height || '?'}${caps.zoom ? ` zoom ${s2.zoom ?? '?'} (${caps.zoom.min}-${caps.zoom.max})` : ''}`;
+    } catch { /* zoom control not available */ }
+  }
+
+  _loadFov(vw, vh) {
+    const key = `${vw}x${vh}`;
+    if (this.fovDims === key) return;
+    this.fovDims = key; this.fovSamples = [];
+    if (this.fovFixed) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem(FOV_KEY) || '{}');
+      if (saved[key]) { this._setFov(saved[key]); this.fovSource = 'saved'; }
+    } catch { /* storage unavailable */ }
+  }
+
+  _setFov(fov) {
+    if (Math.abs(fov - this.fov) < 0.3) return;
+    const s = Math.tan(this.fov * D2R / 2) / Math.tan(fov * D2R / 2);   // new focal / old focal
+    this.fov = fov;
+    for (const st of Object.values(this.T)) {
+      st.filtT.reset(); st.filtQ.reset(); st.prevQ = null;
+      if (st.raw) st.raw = { ...st.raw, t: st.raw.t.map((x) => x * s) };
+      if (st.t) st.t = st.t.map((x) => x * s);
+    }
+  }
+
+  // Learn the field of view from views that show two or more faces of the cube.
+  _learnFov(res, K) {
+    if (this.fovFixed) return;
+    const p = res.poses.cube;
+    if (!p || p.ambiguous || p.faces.length < 2 || p.n < 3) return;
+    if (this.fovTick++ % 3) return;
+    const tg = this.tracker.targets.cube;
+    const used = res.markers.filter((m) => p.ids.includes(m.id));
+    const obj = used.flatMap((m) => tg.markers.get(m.id).corners), img = used.flatMap((m) => m.corners);
+    const e = estimateFov(p.R, p.t, K, obj, img);
+    if (!e) return;
+    this.fovSamples.push(e.fov);
+    if (this.fovSamples.length > 25) this.fovSamples.shift();
+    if (this.fovSamples.length >= 4) {
+      this._setFov(median(this.fovSamples));
+      this.fovSource = 'learned';
+      if (this.fovSamples.length >= 6 && this.fovSamples.length - this.fovSavedAt >= 5) {
+        this.fovSavedAt = this.fovSamples.length;
+        try {
+          const saved = JSON.parse(localStorage.getItem(FOV_KEY) || '{}');
+          saved[this.fovDims] = Math.round(this.fov * 10) / 10;
+          localStorage.setItem(FOV_KEY, JSON.stringify(saved));
+        } catch { /* storage unavailable */ }
+      }
+    }
   }
 
   async _enableSensors() {
@@ -2418,11 +2539,7 @@ class ArSession {
     return [sx, -sy, -uz];
   }
 
-  intrinsics() {
-    const vw = this.video.videoWidth, vh = this.video.videoHeight, L = Math.max(vw, vh);
-    const f = (L / 2) / Math.tan(this.fov * D2R / 2);
-    return { fx: f, fy: f, cx: vw / 2, cy: vh / 2, vw, vh };
-  }
+  intrinsics() { return intrinsicsFor(this.fov, this.video.videoWidth, this.video.videoHeight); }
 
   _loop() {
     const v = this.video;
@@ -2440,7 +2557,7 @@ class ArSession {
     const vw = K.vw, vh = K.vh, L = Math.max(vw, vh);
     for (const key of ['cube', 'card']) {
       const st = this.T[key];
-      if (!st.raw || t - st.seen > Math.max(0.25, 2.5 / Math.max(this.fps, 1))) continue;
+      if (!st.raw || t - st.seen > Math.max(HOLD, 3 / Math.max(this.fps, 1))) continue;
       const tg = this.tracker.targets[key];
       if (!tg) continue;
       const b = projectedBox(tg, st.raw, K);
@@ -2451,16 +2568,18 @@ class ArSession {
       if (x1 - x0 < 32 || y1 - y0 < 32) continue;
       const cellNative = tg.cell * K.fx / Math.max(50, st.raw.t[2]);
       const scale = Math.min(1, this.PROC / Math.max(x1 - x0, y1 - y0), 10 / cellNative);
-      return { sx: x0, sy: y0, sw: x1 - x0, sh: y1 - y0, scale, radius: clamp(Math.round(cellNative * scale), 2, 7) };
+      return { sx: x0, sy: y0, sw: x1 - x0, sh: y1 - y0, scale, radius: clamp(Math.round(cellNative * scale), 2, 9) };
     }
-    if (this.n % 2 === 0) return { sx: 0, sy: 0, sw: vw, sh: vh, scale: this.PROC / L, radius: [2, 3, 5][(this.n >> 1) % 3] };
+    // searching: alternate the whole frame and a sharper centre crop, with several threshold window sizes
+    if (this.n % 2 === 0) return { sx: 0, sy: 0, sw: vw, sh: vh, scale: this.PROC / L, radius: [2, 3, 5, 7][(this.n >> 1) % 4] };
     const cw = Math.round(vw / 2), ch = Math.round(vh / 2);
-    return { sx: Math.round((vw - cw) / 2), sy: Math.round((vh - ch) / 2), sw: cw, sh: ch, scale: Math.min(1, this.PROC / Math.max(cw, ch)), radius: [3, 5][(this.n >> 1) % 2] };
+    return { sx: Math.round((vw - cw) / 2), sy: Math.round((vh - ch) / 2), sw: cw, sh: ch, scale: Math.min(1, this.PROC / Math.max(cw, ch)), radius: [3, 5, 7, 9][(this.n >> 1) % 4] };
   }
 
   _onFrame(nowMs) {
     const v = this.video, vw = v.videoWidth, vh = v.videoHeight;
     if (!vw || !this.tracker) return;
+    this._loadFov(vw, vh);
     this.n++;
     const t = nowMs / 1000;
     if (this.lastT) this.fps = this.fps * 0.9 + 0.1 / Math.max(1e-3, t - this.lastT);
@@ -2481,18 +2600,19 @@ class ArSession {
       else if (this.cvMs < 14 && this.PROC < 640) this.PROC = Math.min(640, Math.round(this.PROC * 1.1));
     }
     this.markers = res.markers.length;
-    this._update(res, t);
+    this._learnFov(res, K);
+    this._update(res, t, K);
     this.K = K;
     this.frameVersion++;
   }
 
-  _update(res, t) {
+  _update(res, t, K) {
     for (const key of ['cube', 'card']) {
       const st = this.T[key], p = res.poses[key];
-      const good = p && (p.rms < 3.5 || (p.n >= 2 && p.rms < 6)) && !p.ambiguous;
-      if (!good) continue;
+      const size = key === 'cube' ? this.tracker.layout.edge : this.tracker.layout.card.size;
+      if (!poseIsGood(p, size, K)) continue;
       if (t - st.seen > 0.6) { st.filtT.reset(); st.filtQ.reset(); st.prevQ = null; }
-      st.raw = p; st.seen = t;
+      st.raw = p; st.seen = t; st.seenNow = performance.now() / 1000;
       let qq = matToQuat(p.R);
       if (st.prevQ && qq[0] * st.prevQ[0] + qq[1] * st.prevQ[1] + qq[2] * st.prevQ[2] + qq[3] * st.prevQ[3] < 0) qq = qq.map((x) => -x);
       st.prevQ = qq;
@@ -2500,17 +2620,17 @@ class ArSession {
       const nq = Math.hypot(...qf);
       st.q = qf.map((x) => x / nq); st.t = tf;
     }
-    const visible = (k) => this.T[k].raw && t - this.T[k].seen < Math.max(0.3, 2.5 / Math.max(this.fps, 1));
+    const visible = (k) => this.T[k].raw && t - this.T[k].seen < Math.max(HOLD, 3 / Math.max(this.fps, 1));
     this.active = visible('cube') ? 'cube' : visible('card') ? 'card' : null;
     if (this.active) {
       const st = this.T[this.active];
-      this.pose = { R: quatToMat(st.q), t: st.t.slice(), target: this.active, time: performance.now() / 1000 };
+      this.pose = { R: quatToMat(st.q), t: st.t.slice(), target: this.active, time: st.seenNow };
     }
   }
 
   // Seconds since the cube (or card) was last seen.
   get age() { return this.pose && this.active ? performance.now() / 1000 - this.pose.time : Infinity; }
-  get tracking() { return !!this.active && this.age < 0.35; }
+  get tracking() { return !!this.active && this.age < HOLD; }
   get edge() { return this.tracker ? this.tracker.layout.edge : 70; }
 }
 
@@ -3137,7 +3257,7 @@ async function startAR() {
   const btn = $('btnAR'), err = $('arErr');
   err.hidden = true; btn.disabled = true; btn.lastChild.textContent = t('arStarting');
   try {
-    if (!ar) ar = new ArSession({ fov: params.has('fov') ? +params.get('fov') : 66 });
+    if (!ar) ar = new ArSession({ fov: params.has('fov') ? +params.get('fov') : 0 });
     await ar.start();
     mode = 'ar'; gAR = null; readyHold = 0;
     document.body.classList.add('is-ar');
@@ -3187,7 +3307,7 @@ function updateArHint(tracked) {
     arDbgT = clock;
     const p = ar.pose;
     $('arDebug').hidden = false;
-    $('arDebug').textContent = `fps ${ar.fps.toFixed(0)} · cv ${ar.cvMs.toFixed(0)} ms · markers ${ar.markers} · ${ar.active || 'none'}${p ? ` · z ${p.t[2].toFixed(0)} mm` : ''} · tilt sensor ${ar.sensorOn ? 'on' : 'off'}${gAR ? ` · g ${gAR.map((x) => x.toFixed(2)).join(' ')}` : ''}`;
+    $('arDebug').textContent = `fps ${ar.fps.toFixed(0)} · cv ${ar.cvMs.toFixed(0)} ms · markers ${ar.markers} · ${ar.active || 'none'}${p ? ` · z ${p.t[2].toFixed(0)} mm` : ''} · fov ${ar.fov.toFixed(1)}° ${ar.fovSource} (${ar.fovSamples.length}) · cam ${ar.camInfo} · tilt sensor ${ar.sensorOn ? 'on' : 'off'}${gAR ? ` · g ${gAR.map((x) => x.toFixed(2)).join(' ')}` : ''}`;
   }
 }
 

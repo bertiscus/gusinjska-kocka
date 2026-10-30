@@ -1,3 +1,4 @@
+AUTO = False
 """End-to-end AR test: the game in Chromium with a fake camera fed from test/ar_video.py.
 
 python3 test/ar_test.py VIDEO.y4m [seconds]
@@ -16,7 +17,7 @@ PORT = 8790
 PROBE = """() => {
   const g = window.__gk, ar = g.ar, v = g.arView;
   if (!ar) return null;
-  const out = { mode: g.mode, active: ar.active, tracking: ar.tracking, markers: ar.markers, fps: ar.fps, cv: ar.cvMs,
+  const out = { fov: ar.fov, fovSource: ar.fovSource, mode: g.mode, active: ar.active, tracking: ar.tracking, markers: ar.markers, fps: ar.fps, cv: ar.cvMs,
     phase: g.game.phase, ball: { ...g.game.ball }, time: g.game.time, gAR: g.gAR, hint: document.getElementById('arHint').hidden ? '' : document.getElementById('arHintTitle').textContent,
     vw: ar.video.videoWidth, vh: ar.video.videoHeight };
   if (ar.pose) out.pose = { R: ar.pose.R, t: ar.pose.t };
@@ -47,7 +48,10 @@ def rot_err(A, B):
 
 
 async def main():
-    video = sys.argv[1]; secs = float(sys.argv[2]) if len(sys.argv) > 2 else 26
+    global AUTO
+    AUTO = '--auto' in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    video = args[0]; secs = float(args[1]) if len(args) > 1 else 26
     gt = json.load(open(video.replace('.y4m', '.json')))
     segs = gt['segments']; K = gt['K']
     os.makedirs(OUT, exist_ok=True)
@@ -62,7 +66,7 @@ async def main():
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
         await pg.route('**/*', lambda r: r.continue_() if r.request.url.startswith(f'http://127.0.0.1:{PORT}') else r.abort())
-        await pg.goto(f'http://127.0.0.1:{PORT}/index.html?fov={gt["fov"]:.4f}&debug')
+        await pg.goto(f'http://127.0.0.1:{PORT}/index.html?debug' + ('' if AUTO else f'&fov={gt["fov"]:.4f}'))
         await pg.wait_for_timeout(2500)
         await pg.screenshot(path=f'{OUT}/ar_00_title.png')
         await pg.click('#btnAR')
@@ -76,11 +80,14 @@ async def main():
             vw, vh = await pg.evaluate("[window.__gk.ar.video.videoWidth, window.__gk.ar.video.videoHeight]")
             if vw: break
             await pg.wait_for_timeout(200)
+        K = dict(K); K['cx'] -= (gt['W'] - vw) / 2; K['cy'] -= (gt['H'] - vh) / 2
+        true_fov = math.degrees(2 * math.atan(max(vw, vh) / 2 / K['fx']))
         if (vw, vh) != (gt['W'], gt['H']):
-            K = dict(K); K['cx'] -= (gt['W'] - vw) / 2; K['cy'] -= (gt['H'] - vh) / 2
-            fov = math.degrees(2 * math.atan(max(vw, vh) / 2 / K['fx']))
-            await pg.evaluate(f"window.__gk.ar.fov = {fov}")
-            print(f'browser delivers a {vw}x{vh} centre crop of the {gt["W"]}x{gt["H"]} video: field of view set to {fov:.2f}°')
+            print(f'browser delivers a {vw}x{vh} centre crop of the {gt["W"]}x{gt["H"]} video: true field of view {true_fov:.2f}°')
+        if AUTO:
+            print('field of view is left for the game to learn (starts at', await pg.evaluate("window.__gk.ar.fov"), ')')
+        else:
+            await pg.evaluate(f"window.__gk.ar.fov = {true_fov}")
         samples = []; shots = set(); t0 = time.time()
         while time.time() - t0 < secs:
             await pg.wait_for_timeout(300)
@@ -130,6 +137,10 @@ async def main():
         if not s.get('tracking'): s['seg'] = 'lost'
         line = f'    {s["wall"]:5.1f}s {s["phase"]:5s} seg {s.get("seg", "-")} f{b_["f"]} u {b_["u"]:+.2f} v {b_["v"]:+.2f} speed {sp:.2f}  {s["hint"]}'
         if line[12:] != prev: print(line); prev = line[12:]
+    if AUTO:
+        print('  learned field of view over time:', ' '.join(f"{s['wall']:.0f}s:{s['fov']:.1f}" for s in samples[::3]), f'(true {true_fov:.1f}°)')
+        early = [s for s in samples if s['wall'] < 4]; late = [s for s in samples if s['wall'] >= secs / 2]
+        print(f"  tracked share: first 4 s {sum(1 for s in early if s.get('tracking'))}/{len(early)}, second half {sum(1 for s in late if s.get('tracking'))}/{len(late)} (cube is out of view in one segment)")
     print('errors:', errs[:6] or 'none')
 
 

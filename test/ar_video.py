@@ -1,6 +1,6 @@
 """Synthetic phone-camera video of the printed AR cube, for testing AR mode.
 
-python3 test/ar_video.py OUT.y4m [--size 960x540] [--fps 15] [--card]
+python3 test/ar_video.py OUT.y4m [--size 960x540] [--fps 15] [--card] [--fov DEG] [--dist MM]
 
 The camera sits above and in front of the cube, looking down at it. The cube goes through
 segments (held still in each): level -> tilted towards the camera -> tilted to the right.
@@ -45,9 +45,11 @@ def main():
     out = sys.argv[1]
     W, H = (int(x) for x in (sys.argv[sys.argv.index('--size') + 1] if '--size' in sys.argv else '960x540').split('x'))
     fps = int(sys.argv[sys.argv.index('--fps') + 1]) if '--fps' in sys.argv else 15
-    f = 0.78 * max(W, H)
+    fov_arg = float(sys.argv[sys.argv.index('--fov') + 1]) if '--fov' in sys.argv else None
+    f = (max(W, H) / 2) / math.tan(math.radians(fov_arg / 2)) if fov_arg else 0.78 * max(W, H)
     K = np.array([[f, 0, W / 2], [0, f, H / 2], [0, 0, 1]])
     C = np.array([0.0, 190.0, 250.0])           # camera position (mm), cube at the origin
+    if '--dist' in sys.argv: C = C / np.linalg.norm(C) * float(sys.argv[sys.argv.index('--dist') + 1])
     Rwc = look_at(C)
     up_cam = Rwc @ np.array([0, 1.0, 0])
     yaw = rot([0, 1, 0], 28)                     # turn the cube so two side faces show

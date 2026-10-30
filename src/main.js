@@ -617,7 +617,7 @@ async function startAR() {
   const btn = $('btnAR'), err = $('arErr');
   err.hidden = true; btn.disabled = true; btn.lastChild.textContent = t('arStarting');
   try {
-    if (!ar) ar = new ArSession({ fov: params.has('fov') ? +params.get('fov') : 66 });
+    if (!ar) ar = new ArSession({ fov: params.has('fov') ? +params.get('fov') : 0 });
     await ar.start();
     mode = 'ar'; gAR = null; readyHold = 0;
     document.body.classList.add('is-ar');
@@ -667,7 +667,7 @@ function updateArHint(tracked) {
     arDbgT = clock;
     const p = ar.pose;
     $('arDebug').hidden = false;
-    $('arDebug').textContent = `fps ${ar.fps.toFixed(0)} · cv ${ar.cvMs.toFixed(0)} ms · markers ${ar.markers} · ${ar.active || 'none'}${p ? ` · z ${p.t[2].toFixed(0)} mm` : ''} · tilt sensor ${ar.sensorOn ? 'on' : 'off'}${gAR ? ` · g ${gAR.map((x) => x.toFixed(2)).join(' ')}` : ''}`;
+    $('arDebug').textContent = `fps ${ar.fps.toFixed(0)} · cv ${ar.cvMs.toFixed(0)} ms · markers ${ar.markers} · ${ar.active || 'none'}${p ? ` · z ${p.t[2].toFixed(0)} mm` : ''} · fov ${ar.fov.toFixed(1)}° ${ar.fovSource} (${ar.fovSamples.length}) · cam ${ar.camInfo} · tilt sensor ${ar.sensorOn ? 'on' : 'off'}${gAR ? ` · g ${gAR.map((x) => x.toFixed(2)).join(' ')}` : ''}`;
   }
 }
 

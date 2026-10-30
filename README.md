@@ -27,13 +27,14 @@ The buildings are our own 3D models, reduced to light game versions with their p
 | `src/main.js` | Scene, model loading, controls, menus, all game text (ME / SQ / EN) |
 | `src/page.html` | Page layout and styles |
 | `src/ar/session.js` | AR mode: camera, tracking loop, pose smoothing, "up" from the phone's tilt sensor |
+| `src/ar/calib.js` | Learns the camera's field of view from the cube; judges pose accuracy relative to the cube's size |
 | `src/ar/detector.js`, `pose.js`, `tracker.js` | Marker detector and pose solver, from `wave84mn/ar-cube` (contour code adapted from js-aruco, MIT, see `src/ar/LICENSE-js-aruco.txt`) |
 | `ar/layout.json` | Marker layout of the printed cube and card (same file as in `ar-cube`) |
 | `ar/AR_cube_paper_test.pdf` | Printable paper cube and flat card |
 | `build.mjs` | Bundles `src/` into `index.html` (each module keeps its own scope) |
 | `test/core.test.mjs` | Checks edge crossing, level maps, that the autopilot finishes every level, and a 400-second random-tilt test |
 | `test/browser_test.py` | Plays every level in a phone-sized headless browser and takes screenshots |
-| `test/ar_video.py`, `test/ar_test.py` | AR test: renders a fake camera video of the cube (or card) with known poses, plays it as the browser's camera and checks pose, on-screen alignment, gravity and ball direction |
+| `test/ar_video.py`, `test/ar_test.py` | AR test: renders a fake camera video of the cube (or card) with known poses (`--fov`, `--dist` for narrow cameras), plays it as the browser's camera and checks pose, on-screen alignment, gravity and ball direction; `--auto` lets the game learn the field of view |
 
 ## Build and test
 
@@ -50,7 +51,9 @@ python3 test/browser_test.py   # needs Playwright with Chromium
 3. The game cube is drawn with the camera's own projection, slightly larger than the real cube so its edges stay hidden.
 4. A level starts when the face with the ball is level. When the cube leaves the camera view, the game waits.
 
-Field of view: the camera is assumed to see 66° along the long side of the image. If the game cube sits a little off the real cube on some phone, open the page with `?fov=60` (or another value); `?debug` shows tracking speed and status.
+Field of view: phones differ a lot. Some give the browser a wide picture, others a cropped, zoomed-in one (about 23° on one test phone). The game learns the camera's field of view from the cube itself: whenever two or more faces are visible it finds the value that makes the cube fit best, takes the median of recent estimates and remembers it on the phone (per camera resolution). It also asks the camera for its widest zoom where the phone allows it. `?fov=60` fixes the value and turns learning off; `?debug` shows tracking speed, markers found, the field of view in use and the camera mode.
+
+Pose acceptance: a pose is shown when its error is small relative to the cube's size on screen (hand-made cubes are never perfect). When the cube is briefly lost (motion blur, a finger over a face), the game keeps the last position for 0.6 s before pausing.
 
 ## Writing levels
 
