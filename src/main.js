@@ -22,6 +22,7 @@ const TXT = {
     par: 'Tri zvjezdice: do {par} s', newBest: 'Novi rekord', allDone: 'Svi nivoi su završeni.',
     noGL: 'Ovaj preglednik ne može prikazati 3D. Probaj u Chromeu ili Safariju.',
     keys: 'Tastatura: strelice naginju, Q i E okreću, razmak poravnava.',
+    zoomIn: 'Približi', zoomOut: 'Udalji',
     arPlay: 'Igraj s AR kockom', arStarting: 'Pokrećem kameru…', arExit: 'Igraj prstom',
     arFind: 'Usmjeri kameru na kocku.', arFindSub: 'Drži kocku 20–35 cm od telefona, na dobrom svjetlu.',
     arTurnUp: 'Okreni kocku tako da kugla bude gore.', arTurnSub: 'Igra kreće kad strana s kuglom bude ravno.',
@@ -48,6 +49,7 @@ const TXT = {
     par: 'Tri yje: deri në {par} s', newBest: 'Rekord i ri', allDone: 'I përfundove të gjitha nivelet.',
     noGL: 'Ky shfletues nuk mund të shfaqë 3D. Provo në Chrome ose Safari.',
     keys: 'Tastiera: shigjetat e anojnë kubin, Q dhe E e rrotullojnë, hapësira e drejton.',
+    zoomIn: 'Zmadho', zoomOut: 'Zvogëlo',
     arPlay: 'Luaj me kubin AR', arStarting: 'Po ndizet kamera…', arExit: 'Luaj me gisht',
     arFind: 'Drejtoje kamerën nga kubi.', arFindSub: 'Mbaje kubin 20–35 cm larg telefonit, në dritë të mirë.',
     arTurnUp: 'Ktheje kubin që topi të jetë sipër.', arTurnSub: 'Loja nis kur faqja me topin të jetë e drejtë.',
@@ -74,6 +76,7 @@ const TXT = {
     par: 'Three stars: {par} s or less', newBest: 'New best', allDone: 'All levels complete.',
     noGL: 'This browser can’t show 3D. Try Chrome or Safari.',
     keys: 'Keyboard: arrows tilt, Q and E turn, space levels.',
+    zoomIn: 'Zoom in', zoomOut: 'Zoom out',
     arPlay: 'Play with the AR cube', arStarting: 'Starting the camera…', arExit: 'Play by touch',
     arFind: 'Point the camera at the cube.', arFindSub: 'Hold the cube 20–35 cm from the phone, in good light.',
     arTurnUp: 'Turn the cube so the ball is on top.', arTurnSub: 'The game starts when the ball’s face is level.',
@@ -91,6 +94,7 @@ const STORE = 'gusinjska-kocka/v1';
 function loadSave() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } }
 function writeSave() { try { localStorage.setItem(STORE, JSON.stringify(save)); } catch { /* storage unavailable */ } }
 const save = Object.assign({ done: {}, muted: false, lang: null }, loadSave());
+if (!save.zoom || typeof save.zoom !== 'object') save.zoom = { touch: 1, ar: 1 };
 const LANGS = ['me', 'sq', 'en'];
 const browserLang = (navigator.language || '').toLowerCase();
 let lang = LANGS.includes(save.lang) ? save.lang : /^(sr|bs|hr|me|cnr|sh)/.test(browserLang) ? 'me' : /^(sq|als|aln)/.test(browserLang) ? 'sq' : 'en';
@@ -296,7 +300,32 @@ const SITE = 'https://bertiscus.github.io/gusinjska-kocka/';
 const params = new URLSearchParams(location.search);
 let mode = 'touch', ar = null, arStarting = false;
 let gAR = null, readyHold = 0, arView = null;
-const AR_SCALE = 1.02;    // draw the game cube a little larger than the real one so its edges stay hidden
+const AR_SCALE = 1.02;
+
+// ---------- zoom: steps for the buttons, any value in between by pinching ----------
+const ZOOMS = [0.5, 0.75, 1, 1.5, 2];
+const ZMIN = ZOOMS[0], ZMAX = ZOOMS[ZOOMS.length - 1];
+let zoomShown = null;                   // eased value used for drawing
+const zoomOf = () => { const z = +save.zoom[mode]; return Number.isFinite(z) ? Math.min(ZMAX, Math.max(ZMIN, z)) : 1; };
+function setZoom(z, persist = true) {
+  save.zoom[mode] = Math.round(Math.min(ZMAX, Math.max(ZMIN, z)) * 100) / 100;
+  if (persist) writeSave();
+  updateZoomUI();
+}
+function stepZoom(dir) {
+  const z = zoomOf();
+  const next = dir > 0 ? ZOOMS.find((v) => v > z + 0.01) : [...ZOOMS].reverse().find((v) => v < z - 0.01);
+  if (next !== undefined) { setZoom(next); audio.play('click'); }
+}
+const fmtZoom = (z) => (Math.abs(z - Math.round(z)) < 0.01 ? String(Math.round(z)) : String(+z.toFixed(2)).replace('.', lang === 'en' ? '.' : ',')) + '×';
+function updateZoomUI() {
+  const z = zoomOf();
+  $('zoomVal').textContent = fmtZoom(z);
+  $('btnZoomIn').disabled = z >= ZMAX - 0.001;
+  $('btnZoomOut').disabled = z <= ZMIN + 0.001;
+  $('btnZoomIn').setAttribute('aria-label', `${t('zoomIn')} (${fmtZoom(z)})`);
+  $('btnZoomOut').setAttribute('aria-label', `${t('zoomOut')} (${fmtZoom(z)})`);
+}    // draw the game cube a little larger than the real one so its edges stay hidden
 
 function startLevel(k, toScreen = 'play') {
   levelIndex = k;
@@ -320,6 +349,7 @@ function setScreen(s) {
   els.done.hidden = s !== 'done';
   els.hud.hidden = s !== 'play';
   els.controls.hidden = s !== 'play';
+  $('zoom').hidden = s !== 'play';
   els.hint.hidden = !(s === 'play' && game && game.phase === 'ready' && !demo && mode === 'touch');
   if (s === 'title' && mode === 'ar') stopAR();
   updateModeUI();
@@ -364,6 +394,7 @@ function renderHud() {
   $('btnRestart').setAttribute('aria-label', t('restart'));
   $('btnMenu').setAttribute('aria-label', t('menu'));
   $('btnExitAR').textContent = t('arExit');
+  updateZoomUI();
   updateSoundBtn();
   $('hintText').textContent = t('hint');
   $('hintGoal').textContent = t('goal');
@@ -484,18 +515,30 @@ function levelBallFace() {
 }
 
 let dragId = null, lx = 0, ly = 0;
+const pointers = new Map();
+let pinch = null;                        // { d0, z0 } while two fingers are down
+const pinchDist = () => { const [a, b] = [...pointers.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
 els.gl.addEventListener('pointerdown', (e) => {
-  if (screen !== 'play' || dragId !== null) return;
-  dragId = e.pointerId; lx = e.clientX; ly = e.clientY;
+  if (screen !== 'play') return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   try { els.gl.setPointerCapture(e.pointerId); } catch { /* ignore */ }
   audio.init();
+  if (pointers.size === 2) { dragId = null; pinch = { d0: Math.max(20, pinchDist()), z0: zoomOf() }; return; }
+  if (pointers.size === 1 && mode === 'touch') { dragId = e.pointerId; lx = e.clientX; ly = e.clientY; }
 });
 els.gl.addEventListener('pointermove', (e) => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && pointers.size >= 2) { setZoom(pinch.z0 * pinchDist() / pinch.d0, false); return; }
   if (e.pointerId !== dragId) return;
   const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
   if (dx || dy) tiltBy(dx, dy);
 });
-const endDrag = (e) => { if (e.pointerId === dragId) dragId = null; };
+const endDrag = (e) => {
+  pointers.delete(e.pointerId);
+  if (e.pointerId === dragId) dragId = null;
+  if (pinch && pointers.size < 2) { pinch = null; writeSave(); }
+};
 els.gl.addEventListener('pointerup', endDrag);
 els.gl.addEventListener('pointercancel', endDrag);
 window.addEventListener('keydown', (e) => {
@@ -504,6 +547,8 @@ window.addEventListener('keydown', (e) => {
   else if (e.key === 'q' || e.key === 'Q') { spin(1); audio.play('spin'); }
   else if (e.key === 'e' || e.key === 'E') { spin(-1); audio.play('spin'); }
   else if (e.key === ' ') { levelBallFace(); audio.play('level'); e.preventDefault(); }
+  else if (e.key === '+' || e.key === '=') stepZoom(1);
+  else if (e.key === '-' || e.key === '_') stepZoom(-1);
 });
 window.addEventListener('keyup', (e) => keys.delete(e.key));
 window.addEventListener('blur', () => keys.clear());
@@ -516,6 +561,8 @@ $('btnMenu').addEventListener('click', () => { setScreen('title'); audio.play('c
 $('btnSound').addEventListener('click', () => { audio.init(); save.muted = !save.muted; writeSave(); updateSoundBtn(); if (audio.kit) audio.kit.setMuted(save.muted); audio.play('click'); });
 $('btnPlay').addEventListener('click', () => { audio.init(); startLevel(levelIndex, 'play'); audio.play('go'); });
 $('btnAR').addEventListener('click', () => { startAR(); });
+$('btnZoomIn').addEventListener('click', () => stepZoom(1));
+$('btnZoomOut').addEventListener('click', () => stepZoom(-1));
 $('btnExitAR').addEventListener('click', () => { stopAR(); levelBallFace(); audio.play('click'); });
 $('btnNext').addEventListener('click', () => { startLevel(Math.min(levelIndex + 1, LEVELS.length - 1), 'play'); audio.play('go'); });
 $('btnAgain').addEventListener('click', () => { startLevel(levelIndex, 'play'); audio.play('go'); });
@@ -600,6 +647,7 @@ function stopAR() {
 }
 function updateModeUI() {
   const isAR = mode === 'ar';
+  updateZoomUI();
   for (const id of ['btnSpinL', 'btnSpinR', 'btnFlat']) $(id).hidden = isAR;
   $('btnExitAR').hidden = !isAR;
   els.bg.hidden = isAR;
@@ -636,7 +684,8 @@ function camera() {
   const aspect = vpW / vpH, fovy = aspect < 1 ? 46 * Math.PI / 180 : 38 * Math.PI / 180;
   const fovx = 2 * Math.atan(Math.tan(fovy / 2) * aspect);
   const half = Math.min(fovy, fovx) / 2;
-  const dist = (8.4 / Math.sin(half)) * camZoom, el = camEl;
+  const zl = zoomShown || 1;
+  const dist = (8.4 / Math.sin(half)) * camZoom / zl, el = camEl;
   const eye = [0, Math.sin(el) * dist, Math.cos(el) * dist];
   const P = m4.perspective(fovy, aspect, 1, dist * 3);
   const shift = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, camShift, 0, 1]);
@@ -654,6 +703,10 @@ function frame(now) {
   const wantShift = play ? -0.07 : 0.34, wantZoom = play ? 0.97 : 1.2, wantEl = (play ? 47 : 34) * Math.PI / 180;
   const k = 1 - Math.exp(-real * 5);
   camShift += (wantShift - camShift) * k; camZoom += (wantZoom - camZoom) * k; camEl += (wantEl - camEl) * k;
+
+  // zoom eases towards the chosen value
+  const zTarget = screen === 'title' ? 1 : zoomOf();
+  zoomShown = zoomShown === null ? zTarget : zoomShown * Math.pow(zTarget / zoomShown, 1 - Math.exp(-real * 12));
 
   // cube orientation
   if (anim) {
@@ -731,7 +784,7 @@ function arCamera() {
   if (!K || !K.vw) return null;
   const W = vpW, Hh = vpH, vw = K.vw, vh = K.vh;
   const sFill = Math.max(W / vw, Hh / vh), sFit = Math.min(W / vw, Hh / vh);
-  const s = sFill / sFit > 1.25 ? sFit : sFill;   // fill the screen unless that crops too much of the image
+  const s = (sFill / sFit > 1.25 ? sFit : sFill) * (zoomShown || 1);   // fill the screen unless that crops too much; then zoom
   const ox = (vw - W / s) / 2, oy = (vh - Hh / s) / 2;
   const fx = K.fx * s, fy = K.fy * s, cx = (K.cx - ox) * s, cy = (K.cy - oy) * s;
   const n = 5, f = 20000;
@@ -834,6 +887,6 @@ window.__gk = {
   get game() { return game; }, get screen() { return screen; }, get Q() { return Q; },
   startLevel, setDemo(v) { demo = v; }, setTimeScale(v) { timeScale = v; },
   tilt: tiltBy, SoundKit, get audio() { return audio; },
-  get ar() { return ar; }, get mode() { return mode; }, get gAR() { return gAR; }, get arView() { return arView; }, startAR, stopAR,
+  get ar() { return ar; }, get mode() { return mode; }, get gAR() { return gAR; }, get arView() { return arView; }, startAR, stopAR, setZoom, stepZoom, get zoom() { return zoomOf(); },
 };
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});

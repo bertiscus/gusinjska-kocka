@@ -171,6 +171,20 @@ button { font: inherit; color: inherit; }
 
 .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-left, 0px)); text-align: center; font-size: 1rem; }
 
+/* ---------- zoom ---------- */
+.zoom {
+  position: absolute; top: 50%; right: max(12px, env(safe-area-inset-right, 0px)); transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: center; width: 46px; padding: 3px 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 23px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 4px 14px rgba(26, 41, 40, 0.12);
+}
+.zoom button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.zoom button svg { width: 20px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }
+.zoom button:disabled svg { stroke: rgba(26, 41, 40, 0.25); }
+.zoom button:disabled { cursor: default; }
+.zoom button:active:not(:disabled) { background: rgba(26, 41, 40, 0.08); }
+.zoom output { font-size: 0.8rem; font-weight: 600; font-variant-numeric: tabular-nums; padding: 2px 0; min-width: 40px; text-align: center; }
+
 /* ---------- AR ---------- */
 .play-row { display: grid; gap: 8px; }
 .ar-btn {
@@ -219,6 +233,12 @@ body.is-ar .lvl > span:last-child { background: var(--panel); border: 1px solid 
     </div>
     <ol class="chips" id="chips"></ol>
   </header>
+
+  <div id="zoom" class="zoom" role="group" hidden>
+    <button id="btnZoomIn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    <output id="zoomVal" aria-live="polite">1×</output>
+    <button id="btnZoomOut" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden>
     <div class="toast-meta" id="toastMeta"></div>

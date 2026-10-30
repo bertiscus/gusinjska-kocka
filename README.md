@@ -8,6 +8,8 @@ A tilt-maze game on a six-sided cube. Tilt the cube, roll the ball through a maz
 
 **AR:** on the start screen, tap **Igraj s AR kockom / Luaj me kubin AR / Play with the AR cube** and point the phone's camera at the printed AR cube (the 70 mm cube from `wave84mn/ar-cube`, or the paper one in `ar/AR_cube_paper_test.pdf`). The game cube is drawn onto the real cube; tilt the real cube and the ball rolls downhill. The flat card (page 1 of the PDF) works too: the game cube stands on it. AR needs the camera, so it works from the GitHub Pages site in Chrome (Android) or Safari (iPhone), not inside the Claude preview.
 
+**Zoom:** the + / − buttons on the right side step through 0.5×, 0.75×, 1×, 1.5× and 2×; pinching with two fingers zooms smoothly (keyboard: + and −). Touch play and AR remember their own zoom.
+
 **Play:** open `index.html` (or the GitHub Pages site for this repo) on a phone and drag across the screen to tilt the cube.
 
 The buildings are our own 3D models, reduced to light game versions with their photo textures (see *Buildings* below).
