@@ -2,6 +2,8 @@
 
 A tilt-maze game on a six-sided cube. Tilt the cube, roll the ball through a maze that wraps around all six faces, and visit the buildings of Gusinje by rolling the ball to their doors. Part of Xplore Prokletije.
 
+**Levels:** 1 Kula, 2 Izvori, 3 Cijela kocka, 4 Bogomolje, 5 Gusinje (all nine buildings).
+
 **Play:** open `index.html` (or the GitHub Pages site for this repo) on a phone and drag across the screen to tilt the cube.
 
 The buildings are our own 3D models, reduced to light game versions with their photo textures (see *Buildings* below).
@@ -67,6 +69,8 @@ On `top`, row 0 is the back edge and the last row is the front edge. On `front`,
 | `O` | `opstina` | Opština Gusinje | 3 wide × 2 deep |
 | `C` | `cekica-dzamija` | Čekića džamija | 3×3 |
 | `V` | `vezirova-dzamija` | Vezirova džamija | 3×3 |
+| `A` | `sv-anton` | Crkva sv. Antona | 2 wide × 4 deep |
+| `D` | `sv-djordje` | Crkva sv. Đorđa | 3 wide × 4 deep |
 
 Each model is scaled to fit its footprint (and at most 4 tiles tall), standing on the face with its front (+Z) towards the door tile.
 

@@ -48,18 +48,18 @@ async def main():
 
         # Autoplay every level
         results = []
-        for k in range(3):
+        for k in range(5):
             await page.evaluate(f'__gk.setDemo(true); __gk.setTimeScale(3); __gk.startLevel({k}, "play")')
             t0 = time.time(); shot_mid = False; seen_toast = False
-            while time.time() - t0 < 90:
+            while time.time() - t0 < 150:
                 await page.wait_for_timeout(250)
                 st = await page.evaluate('({screen: __gk.screen, visited: __gk.game.visited.size, total: __gk.game.total, t: __gk.game.time, toast: !document.getElementById("toast").hidden})')
                 if st['toast'] and not seen_toast and k == 2:
                     seen_toast = True
                     await page.screenshot(path=f'{OUT}/05_l3_toast.png')
-                if not shot_mid and st['t'] > 6 and k == 1:
+                if not shot_mid and st['t'] > 6 and k in (1, 3, 4):
                     shot_mid = True
-                    await page.screenshot(path=f'{OUT}/06_l2_mid.png')
+                    await page.screenshot(path=f'{OUT}/06_l{k+1}_mid.png')
                 if st['screen'] == 'done':
                     break
             results.append(st)
@@ -67,7 +67,7 @@ async def main():
             print(f'level {k+1}:', json.dumps(st), f'wall {time.time()-t0:.1f}s')
         await page.evaluate('__gk.setDemo(false); __gk.setTimeScale(1)')
         await page.click('#btnLevels')
-        await page.wait_for_timeout(1200)
+        await page.wait_for_timeout(1500)
         await page.screenshot(path=f'{OUT}/08_title_after.png')
         fps = await page.evaluate('''new Promise(r => { let n = 0; const t0 = performance.now(); function f(){ n++; if (performance.now() - t0 < 2000) requestAnimationFrame(f); else r(n / 2); } requestAnimationFrame(f); })''')
         print('fps (headless software GL):', fps)

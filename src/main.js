@@ -295,11 +295,21 @@ function renderHud() {
   els.lvlNum.textContent = String(levelIndex + 1);
   els.lvlName.textContent = levelName(levelIndex);
   els.chips.innerHTML = '';
+  // Many buildings: one compact row of dots with a count instead of a name per chip.
+  const compact = level.buildings.length > 5;
+  els.chips.classList.toggle('is-compact', compact);
+  if (compact) {
+    const li = document.createElement('li');
+    li.className = 'chip chip-count';
+    li.textContent = `${t('visited')} ${game.visited.size}/${level.buildings.length}`;
+    els.chips.appendChild(li);
+  }
   for (const b of level.buildings) {
     const li = document.createElement('li');
     li.className = 'chip' + (game.visited.has(b.letter) ? ' is-done' : '');
     li.innerHTML = `<span class="chip-dot" aria-hidden="true"></span><span></span>`;
     li.lastChild.textContent = b.name[lang];
+    if (compact) { li.title = b.name[lang]; li.lastChild.className = 'visually-hidden'; }
     els.chips.appendChild(li);
   }
   els.time.textContent = fmtTime(game.time);

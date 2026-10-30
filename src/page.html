@@ -51,6 +51,11 @@ button { font: inherit; color: inherit; }
 .chip-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--accent); box-sizing: border-box; }
 .chip.is-done { color: var(--ink-2); }
 .chip.is-done .chip-dot { background: var(--gold); border-color: var(--gold); }
+.chips.is-compact { gap: 2px; align-items: center; flex-wrap: nowrap; }
+.chips.is-compact .chip:not(.chip-count) { padding: 3px; background: none; border: 0; }
+.chips.is-compact .chip-count { margin-right: 6px; }
+.chip-count { font-variant-numeric: tabular-nums; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .ibtn {
   width: 46px; height: 46px; flex: none; display: grid; place-items: center; padding: 0; cursor: pointer;

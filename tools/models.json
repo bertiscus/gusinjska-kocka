@@ -30,13 +30,18 @@
   "target": 10000
  },
  "vezirova-dzamija": {
-  "obj": "../scans/vezirova/x/Vezirova_dzamija_samo_dzamija.obj",
-  "tex": "../scans/vezirova/x/Vezirova_dzamija_samo_dzamija_u1_v1_diffuse.png",
-  "up": "z",
-  "level": true,
-  "target": 12000,
-  "yaw": 180,
-  "cut_below": 0.1,
-  "trim_walls": true
+  "obj": "../scans/Vezirova_dzamija_MergeCube/x/Vezirova_dzamija_MergeCube.obj",
+  "tex": "../scans/Vezirova_dzamija_MergeCube/x/Vezirova_dzamija_MergeCube_albedo.jpg",
+  "target": 12000
+ },
+ "sv-anton": {
+  "obj": "../scans/Sv_Anton_crkva_MergeCube/x/Sv_Anton_crkva_MergeCube.obj",
+  "tex": "../scans/Sv_Anton_crkva_MergeCube/x/Sv_Anton_crkva_MergeCube_albedo.jpg",
+  "target": 12000
+ },
+ "sv-djordje": {
+  "obj": "../scans/Sv_Djordje_crkva_MergeCube/x/Sv_Djordje_crkva_MergeCube.obj",
+  "tex": "../scans/Sv_Djordje_crkva_MergeCube/x/Sv_Djordje_crkva_MergeCube_albedo.jpg",
+  "target": 12000
  }
 }
