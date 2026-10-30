@@ -1,4 +1,4 @@
-<!doctype html><html lang="sr-Latn-ME"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<!doctype html><html lang="sr-Latn-ME"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style><title>Gusinjska kocka</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0e2427"><link rel="icon" href="icons/favicon-32.png" sizes="32x32"><link rel="icon" href="icons/icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-title" content="Gusinjska kocka"></head><body>
 <title>Gusinjska kocka</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -221,7 +221,13 @@ button { font: inherit; color: inherit; }
 .ar-btn:disabled { opacity: 0.6; cursor: progress; }
 .ar-err { margin: -4px 0 0; font-size: 0.84rem; line-height: 1.45; color: #8a2d1c; background: #fbebe6; border-radius: 10px; padding: 9px 12px; overflow-wrap: anywhere; }
 .ar-err a { color: var(--accent); font-weight: 600; }
-.ar-print { justify-self: start; margin-top: -6px; font-size: 0.8rem; color: var(--accent); }
+.ar-print { justify-self: start; font-size: 0.8rem; color: var(--accent); }
+.title-links { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-top: -6px; }
+.install-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 13px 0 10px; border-radius: 17px; cursor: pointer;
+  background: var(--stele); border: 1px solid var(--line); color: var(--accent); font: inherit; font-weight: 600; font-size: 0.8rem;
+}
+.install-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
 .ar-hint {
   position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); transform: translateX(-50%);
   width: min(340px, calc(100% - 32px)); display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center;
@@ -336,7 +342,10 @@ body.is-ar .lvl > span:last-child { background: var(--panel); border: 1px solid 
         <button id="btnAR" class="ar-btn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 20 7.2v9.6L12 21.2 4 16.8V7.2z"/><path d="M4 7.2 12 11.6l8-4.4M12 11.6v9.6"/><path d="M1.8 5V2.2h2.8M22.2 5V2.2h-2.8M1.8 19v2.8h2.8M22.2 19v2.8h-2.8"/></svg><span>Igraj s AR kockom</span></button>
       </div>
       <p class="ar-err" id="arErr" role="alert" hidden></p>
-      <a class="ar-print" id="arPrint" href="https://bertiscus.github.io/gusinjska-kocka/ar/AR_cube_paper_test.pdf" target="_blank" rel="noopener">PDF</a>
+      <div class="title-links">
+        <a class="ar-print" id="arPrint" href="https://bertiscus.github.io/gusinjska-kocka/ar/AR_cube_paper_test.pdf" target="_blank" rel="noopener">PDF</a>
+        <button id="btnInstall" class="install-btn" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></svg><span>Instaliraj igru</span></button>
+      </div>
       <p class="note" id="note"></p>
       <p class="keys" id="keys"></p>
     </div>
@@ -2702,6 +2711,7 @@ const { ArSession } = __mods["src/ar/session.js"];
 const TXT = {
   me: {
     presents: 'predstavlja',
+    install: 'Instaliraj igru',
     tagline: 'Nagni kocku i otkotrljaj kuglu do gusinjskih građevina.',
     play: 'Igraj', level: 'Nivo', locked: 'Zaključano', best: 'Najbolje',
     hint: 'Prevuci prstom preko ekrana. Kocka se naginje, a kugla se kotrlja nizbrdo.',
@@ -2730,6 +2740,7 @@ const TXT = {
   },
   sq: {
     presents: 'prezanton',
+    install: 'Instalo lojën',
     tagline: 'Anoje kubin dhe rrokullise topin deri te ndërtesat e Gucisë.',
     play: 'Luaj', level: 'Niveli', locked: 'E kyçur', best: 'Rekordi',
     hint: 'Rrëshqit gishtin nëpër ekran. Kubi anohet dhe topi rrokulliset tatëpjetë.',
@@ -2758,6 +2769,7 @@ const TXT = {
   },
   en: {
     presents: 'presents',
+    install: 'Install the game',
     tagline: 'Tilt the cube and roll the ball to the landmarks of Gusinje.',
     play: 'Play', level: 'Level', locked: 'Locked', best: 'Best',
     hint: 'Drag across the screen. The cube tilts and the ball rolls downhill.',
@@ -3113,6 +3125,7 @@ function renderTitle() {
   $('keys').textContent = t('keys');
   if (!arStarting) $('btnAR').lastChild.textContent = t('arPlay');
   $('arPrint').textContent = t('arPrint');
+  $('btnInstall').lastChild.textContent = t('install');
   document.documentElement.lang = { me: 'sr-Latn-ME', sq: 'sq', en: 'en' }[lang];
   document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   els.levels.innerHTML = '';
@@ -3584,6 +3597,29 @@ function runIntro() {
   setTimeout(hide, reduce ? 1400 : 2700);
 }
 runIntro();
+
+// ---------- install as an app (Android, Windows) ----------
+// Only the GitHub Pages copy has a web app manifest. Chrome and Edge then offer to install the game;
+// installed, it opens in its own window from the home screen / Start menu, and works offline.
+let installPrompt = null;
+function setupInstall() {
+  const btn = $('btnInstall');
+  if (!btn || !document.querySelector('link[rel="manifest"]')) return;
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || params.has('sw'))) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; btn.hidden = false; });
+  window.addEventListener('appinstalled', () => { installPrompt = null; btn.hidden = true; });
+  btn.addEventListener('click', async () => {
+    if (!installPrompt) return;
+    audio.play('click');
+    const p = installPrompt; installPrompt = null;
+    p.prompt();
+    try { await p.userChoice; } catch (err) { /* dismissed */ }
+    btn.hidden = true;
+  });
+}
+setupInstall();
 
 function boot(data = {}) {
   try { R = new Renderer(els.gl); } catch (err) {

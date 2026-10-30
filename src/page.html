@@ -220,7 +220,13 @@ button { font: inherit; color: inherit; }
 .ar-btn:disabled { opacity: 0.6; cursor: progress; }
 .ar-err { margin: -4px 0 0; font-size: 0.84rem; line-height: 1.45; color: #8a2d1c; background: #fbebe6; border-radius: 10px; padding: 9px 12px; overflow-wrap: anywhere; }
 .ar-err a { color: var(--accent); font-weight: 600; }
-.ar-print { justify-self: start; margin-top: -6px; font-size: 0.8rem; color: var(--accent); }
+.ar-print { justify-self: start; font-size: 0.8rem; color: var(--accent); }
+.title-links { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-top: -6px; }
+.install-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 13px 0 10px; border-radius: 17px; cursor: pointer;
+  background: var(--stele); border: 1px solid var(--line); color: var(--accent); font: inherit; font-weight: 600; font-size: 0.8rem;
+}
+.install-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
 .ar-hint {
   position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); transform: translateX(-50%);
   width: min(340px, calc(100% - 32px)); display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center;
@@ -335,7 +341,10 @@ body.is-ar .lvl > span:last-child { background: var(--panel); border: 1px solid 
         <button id="btnAR" class="ar-btn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 20 7.2v9.6L12 21.2 4 16.8V7.2z"/><path d="M4 7.2 12 11.6l8-4.4M12 11.6v9.6"/><path d="M1.8 5V2.2h2.8M22.2 5V2.2h-2.8M1.8 19v2.8h2.8M22.2 19v2.8h-2.8"/></svg><span>Igraj s AR kockom</span></button>
       </div>
       <p class="ar-err" id="arErr" role="alert" hidden></p>
-      <a class="ar-print" id="arPrint" href="https://bertiscus.github.io/gusinjska-kocka/ar/AR_cube_paper_test.pdf" target="_blank" rel="noopener">PDF</a>
+      <div class="title-links">
+        <a class="ar-print" id="arPrint" href="https://bertiscus.github.io/gusinjska-kocka/ar/AR_cube_paper_test.pdf" target="_blank" rel="noopener">PDF</a>
+        <button id="btnInstall" class="install-btn" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></svg><span>Instaliraj igru</span></button>
+      </div>
       <p class="note" id="note"></p>
       <p class="keys" id="keys"></p>
     </div>

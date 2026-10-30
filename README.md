@@ -12,6 +12,10 @@ A tilt-maze game on a six-sided cube. Tilt the cube, roll the ball through a maz
 
 **Zoom:** the + / − buttons on the right side step through 0.5×, 0.75×, 1×, 1.5× and 2×; pinching with two fingers zooms smoothly (keyboard: + and −). Touch play and AR remember their own zoom.
 
+**Install as an app (Android, Windows):** on the GitHub Pages site, Chrome and Edge show **Instaliraj igru / Instalo lojën / Install the game** on the start screen (or offer it in the browser menu). Installed, *Gusinjska kocka* gets its own icon on the home screen or in the Start menu, opens in its own window, and works without internet once it has been opened once (`sw.js`: the newest version is used whenever there is a connection).
+
+**QR codes:** `qr/gusinjska-kocka-android.png` and `qr/gusinjska-kocka-windows.png` (10 × 13 cm at 300 dpi), and `qr/gusinjska-kocka-qr-a4.pdf` (two of each, with cut lines). Xplore Prokletije badge in the middle, the game's name below. They open `https://bertiscus.github.io/gusinjska-kocka/?p=android` and `?p=windows` (the same game; the tag only tells the two codes apart). On Android scan with the camera or Google Lens; on Windows with the **Camera** app (QR code mode). Remake them with `python3 tools/make_brand.py`, which also draws the app icons and checks that every code decodes.
+
 **Play:** open `index.html` (or the GitHub Pages site for this repo) on a phone and drag across the screen to tilt the cube.
 
 The buildings are our own 3D models, reduced to light game versions with their photo textures (see *Buildings* below).
@@ -33,7 +37,10 @@ The buildings are our own 3D models, reduced to light game versions with their p
 | `src/ar/detector.js`, `pose.js`, `tracker.js` | Marker detector and pose solver, from `wave84mn/ar-cube` (contour code adapted from js-aruco, MIT, see `src/ar/LICENSE-js-aruco.txt`) |
 | `ar/layout.json` | Marker layout of the printed cube and card (same file as in `ar-cube`) |
 | `ar/AR_cube_paper_test.pdf` | Printable paper cube and flat card |
-| `build.mjs` | Bundles `src/` into `index.html` (each module keeps its own scope) |
+| `build.mjs` | Bundles `src/` into `index.html` (each module keeps its own scope); writes `sw.js` from `src/sw.js` |
+| `manifest.webmanifest`, `icons/`, `sw.js` | Installable app: name, icons, offline copy |
+| `qr/` | QR cards for Android and Windows, PNG and print PDF |
+| `tools/make_brand.py`, `tools/fonts/` | Draws the QR cards and app icons (fonts: Marcellus and Golos Text, SIL Open Font License) |
 | `test/core.test.mjs` | Checks edge crossing, level maps, that the autopilot finishes every level, and a 400-second random-tilt test |
 | `test/browser_test.py` | Plays every level in a phone-sized headless browser and takes screenshots |
 | `test/ar_video.py`, `test/ar_test.py` | AR test: renders a fake camera video of the cube (or card) with known poses (`--fov`, `--dist` for narrow cameras), plays it as the browser's camera and checks pose, on-screen alignment, gravity and ball direction; `--auto` lets the game learn the field of view |

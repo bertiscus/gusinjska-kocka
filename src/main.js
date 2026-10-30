@@ -8,6 +8,7 @@ import { ArSession } from './ar/session.js';
 const TXT = {
   me: {
     presents: 'predstavlja',
+    install: 'Instaliraj igru',
     tagline: 'Nagni kocku i otkotrljaj kuglu do gusinjskih građevina.',
     play: 'Igraj', level: 'Nivo', locked: 'Zaključano', best: 'Najbolje',
     hint: 'Prevuci prstom preko ekrana. Kocka se naginje, a kugla se kotrlja nizbrdo.',
@@ -36,6 +37,7 @@ const TXT = {
   },
   sq: {
     presents: 'prezanton',
+    install: 'Instalo lojën',
     tagline: 'Anoje kubin dhe rrokullise topin deri te ndërtesat e Gucisë.',
     play: 'Luaj', level: 'Niveli', locked: 'E kyçur', best: 'Rekordi',
     hint: 'Rrëshqit gishtin nëpër ekran. Kubi anohet dhe topi rrokulliset tatëpjetë.',
@@ -64,6 +66,7 @@ const TXT = {
   },
   en: {
     presents: 'presents',
+    install: 'Install the game',
     tagline: 'Tilt the cube and roll the ball to the landmarks of Gusinje.',
     play: 'Play', level: 'Level', locked: 'Locked', best: 'Best',
     hint: 'Drag across the screen. The cube tilts and the ball rolls downhill.',
@@ -419,6 +422,7 @@ function renderTitle() {
   $('keys').textContent = t('keys');
   if (!arStarting) $('btnAR').lastChild.textContent = t('arPlay');
   $('arPrint').textContent = t('arPrint');
+  $('btnInstall').lastChild.textContent = t('install');
   document.documentElement.lang = { me: 'sr-Latn-ME', sq: 'sq', en: 'en' }[lang];
   document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   els.levels.innerHTML = '';
@@ -890,6 +894,29 @@ function runIntro() {
   setTimeout(hide, reduce ? 1400 : 2700);
 }
 runIntro();
+
+// ---------- install as an app (Android, Windows) ----------
+// Only the GitHub Pages copy has a web app manifest. Chrome and Edge then offer to install the game;
+// installed, it opens in its own window from the home screen / Start menu, and works offline.
+let installPrompt = null;
+function setupInstall() {
+  const btn = $('btnInstall');
+  if (!btn || !document.querySelector('link[rel="manifest"]')) return;
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || params.has('sw'))) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; btn.hidden = false; });
+  window.addEventListener('appinstalled', () => { installPrompt = null; btn.hidden = true; });
+  btn.addEventListener('click', async () => {
+    if (!installPrompt) return;
+    audio.play('click');
+    const p = installPrompt; installPrompt = null;
+    p.prompt();
+    try { await p.userChoice; } catch (err) { /* dismissed */ }
+    btn.hidden = true;
+  });
+}
+setupInstall();
 
 function boot(data = {}) {
   try { R = new Renderer(els.gl); } catch (err) {
