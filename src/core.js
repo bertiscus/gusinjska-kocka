@@ -68,16 +68,80 @@ export function fold(f, u, v, vu = 0, vv = 0) {
 // ---------- Content ----------
 // Building letters (footprint, solid) and their lower-case door tiles.
 // Building letters in the level maps. `id` is the model file in models/<id>.json + .jpg.
+// `about` is the short fact shown when the ball reaches the building's door. Sources are listed in README.md.
 export const BUILDINGS = {
-  K: { id: 'kula-rasica', name: { me: 'Kula Rašića', sq: 'Kulla e Rashiqëve', en: 'Rašić Tower' } },
-  J: { id: 'sebilj', name: { me: 'Sebilj', sq: 'Sebili', en: 'Sebilj fountain' } },
-  N: { id: 'kula-nekovica', name: { me: 'Kula Nekovića', sq: 'Kulla e Nekoviqëve', en: 'Neković Tower' } },
-  S: { id: 'sahat-kula', name: { me: 'Sahat kula', sq: 'Kulla e Sahatit', en: 'Clock Tower' } },
-  O: { id: 'opstina', name: { me: 'Opština Gusinje', sq: 'Komuna e Gucisë', en: 'Gusinje Municipality' } },
-  C: { id: 'cekica-dzamija', name: { me: 'Čekića džamija', sq: 'Xhamia e Çekiqëve', en: 'Čekić Mosque' } },
-  V: { id: 'vezirova-dzamija', name: { me: 'Vezirova džamija', sq: 'Xhamia e Vezirit', en: 'Vizier’s Mosque' } },
-  A: { id: 'sv-anton', name: { me: 'Crkva sv. Antona', sq: 'Kisha e Shën Ndout', en: 'St Anthony’s Church' } },
-  D: { id: 'sv-djordje', name: { me: 'Crkva sv. Đorđa', sq: 'Kisha e Shën Gjergjit', en: 'St George’s Church' } },
+  K: {
+    id: 'kula-rasica', name: { me: 'Kula Rašića', sq: 'Kulla e Rashiqëve', en: 'Rašić Tower' },
+    about: {
+      me: 'Kulu su 1904. godine podigli sinovi Ramadana Raša Radončića, po kojem su potomci dobili prezime Rašić. Stoji na brdu Tablja, najvišoj tački grada.',
+      sq: 'Kullën e ndërtuan më 1904 bijtë e Ramadan Rash Radonçiqit; sipas emrit të tij, pasardhësit morën mbiemrin Rashiq. Ngrihet në kodrën Tablja, pika më e lartë e qytetit.',
+      en: 'Built in 1904 by the sons of Ramadan Raš Radončić, after whom their descendants took the surname Rašić. It stands on Tablja hill, the highest point in town.',
+    },
+  },
+  J: {
+    id: 'sebilj', name: { me: 'Sebilj', sq: 'Sebili', en: 'Sebilj fountain' },
+    about: {
+      me: 'Replika čuvenog sebilja sa sarajevske Baščaršije. U osmanskoj tradiciji sebilj je javna česma na kojoj svaki prolaznik besplatno gasi žeđ.',
+      sq: 'Kopje e sebilit të famshëm të Bashçarshisë në Sarajevë. Në traditën osmane, sebili është çezmë publike ku çdo kalimtar shuan etjen falas.',
+      en: 'A replica of the famous Sebilj in Sarajevo’s Baščaršija. In Ottoman tradition, a sebilj is a public fountain offering free water to every passer-by.',
+    },
+  },
+  N: {
+    id: 'kula-nekovica', name: { me: 'Kula Nekovića', sq: 'Kulla e Nekoviqëve', en: 'Neković Tower' },
+    about: {
+      me: 'Kamena kula na ulazu u Gusinje podignuta je oko 1840. godine i smatra se najstarijom sačuvanom stambenom zgradom u kraju. Danas je obnovljena i prima goste.',
+      sq: 'Kjo kullë guri në hyrje të Gucisë daton rreth vitit 1840 dhe mendohet se është banesa më e vjetër e ruajtur në krahinë. Sot është e restauruar dhe pret mysafirë.',
+      en: 'This stone tower at the entrance to Gusinje dates from around 1840 and is thought to be the oldest surviving house in the area. Restored, it now welcomes guests.',
+    },
+  },
+  S: {
+    id: 'sahat-kula', name: { me: 'Sahat kula', sq: 'Kulla e Sahatit', en: 'Clock Tower' },
+    about: {
+      me: 'Sahat kula na ulazu u Gusinje otvorena je u julu 2026. godine. Podignuta je sredstvima iseljenika iz Plava i Gusinja koji žive u New Yorku.',
+      sq: 'Kulla e Sahatit në hyrje të Gucisë u hap në korrik të vitit 2026. U ndërtua me mjetet e mërgimtarëve nga Plava dhe Gucia që jetojnë në Nju Jork.',
+      en: 'The clock tower at the entrance to Gusinje opened in July 2026. It was funded by emigrants from Plav and Gusinje who live in New York.',
+    },
+  },
+  O: {
+    id: 'opstina', name: { me: 'Opština Gusinje', sq: 'Komuna e Gucisë', en: 'Gusinje Municipality' },
+    about: {
+      me: 'Gusinje je samostalna opština od 2014. godine, kada se izdvojilo iz Opštine Plav. U pisanim izvorima prvi put se pominje 1330. godine.',
+      sq: 'Gucia është komunë më vete që nga viti 2014, kur u nda nga Komuna e Plavës. Në burimet e shkruara përmendet për herë të parë më 1330.',
+      en: 'Gusinje became a municipality in its own right in 2014, when it separated from Plav. It is first mentioned in written records in 1330.',
+    },
+  },
+  C: {
+    id: 'cekica-dzamija', name: { me: 'Čekića džamija', sq: 'Xhamia e Çekajve', en: 'Čekić Mosque' },
+    about: {
+      me: 'Podignuta 1687. godine, Čekića džamija jedna je od najstarijih u Gusinju. Nosi ime bratstva Čekića, koje ju je sagradilo.',
+      sq: 'E ndërtuar më 1687, Xhamia e Çekajve është ndër më të vjetrat në Guci. Mban emrin e vëllazërisë Çekaj, që e ndërtoi.',
+      en: 'Built in 1687, the Čekić Mosque is one of the oldest in Gusinje. It bears the name of the Čekić brotherhood, who built it.',
+    },
+  },
+  V: {
+    id: 'vezirova-dzamija', name: { me: 'Vezirova džamija', sq: 'Xhamia e Vezirit', en: 'Vizier’s Mosque' },
+    about: {
+      me: 'Podignuta 1626. i obnovljena 1765. godine, Vezirova džamija prepoznatljiva je po krovu od šindre i drvenoj munari.',
+      sq: 'E ndërtuar më 1626 dhe e rindërtuar më 1765, Xhamia e Vezirit dallohet për çatinë me shindra dhe minaren prej druri.',
+      en: 'Built in 1626 and rebuilt in 1765, the Vizier’s Mosque is known for its wooden-shingle roof and wooden minaret.',
+    },
+  },
+  A: {
+    id: 'sv-anton', name: { me: 'Crkva sv. Antona', sq: 'Kisha e Shën Ndout', en: 'St Anthony’s Church' },
+    about: {
+      me: 'Katolička crkva Svetog Antona u Dolji kod Gusinja podignuta je između 1933. i 1936. godine. U njoj je smješten i etnografski muzej.',
+      sq: 'Kisha katolike e Shën Ndout në Dolja, pranë Gucisë, u ndërtua ndërmjet viteve 1933 dhe 1936. Në të ndodhet edhe një muze etnografik.',
+      en: 'The Catholic Church of St Anthony in Dolja, just outside Gusinje, was built between 1933 and 1936. It also houses an ethnographic museum.',
+    },
+  },
+  D: {
+    id: 'sv-djordje', name: { me: 'Crkva sv. Đorđa', sq: 'Kisha e Shën Gjergjit', en: 'St George’s Church' },
+    about: {
+      me: 'Jednobrodna pravoslavna crkva Svetog Đorđa podignuta je 1926. godine na mjestu starije crkve. Zaštićeni je spomenik kulture.',
+      sq: 'Kisha ortodokse e Shën Gjergjit, me një nef, u ndërtua më 1926 në vendin e një kishe më të vjetër. Është monument kulture i mbrojtur.',
+      en: 'The single-nave Orthodox Church of St George was built in 1926 on the site of an older church. It is a protected cultural monument.',
+    },
+  },
 };
 export const isBuildingChar = (c) => !!BUILDINGS[c];
 export const isDoorChar = (c) => !!BUILDINGS[c.toUpperCase()] && c !== c.toUpperCase();

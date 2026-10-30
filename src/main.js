@@ -17,8 +17,7 @@ const TXT = {
     complete: 'Bravo!', time: 'Vrijeme', next: 'Sljedeći nivo', again: 'Ponovo', levels: 'Nivoi',
     spinL: 'Okreni kocku ulijevo', spinR: 'Okreni kocku udesno', flat: 'Poravnaj', flatLabel: 'Poravnaj stranu s kuglom',
     restart: 'Kreni iz početka', soundOn: 'Isključi zvuk', soundOff: 'Uključi zvuk', menu: 'Nivoi',
-    note: 'Kratke priče o građevinama stižu uskoro.',
-    stub: 'Kratka priča o ovoj građevini stiže uskoro.',
+    note: 'Dovedi kuglu do vrata građevine i saznaj nešto iz njene istorije.',
     loading: 'Učitavam 3D modele… {n}/{t}',
     loadFail: 'Neki modeli se nisu učitali. Provjeri internet i osvježi stranicu.',
     par: 'Tri zvjezdice: do {par} s', newBest: 'Novi rekord', allDone: 'Svi nivoi su završeni.',
@@ -46,8 +45,7 @@ const TXT = {
     complete: 'Bravo!', time: 'Koha', next: 'Niveli tjetër', again: 'Përsëri', levels: 'Nivelet',
     spinL: 'Rrotullo kubin majtas', spinR: 'Rrotullo kubin djathtas', flat: 'Drejto', flatLabel: 'Drejto faqen ku është topi',
     restart: 'Fillo nga e para', soundOn: 'Fik zërin', soundOff: 'Ndiz zërin', menu: 'Nivelet',
-    note: 'Tregime të shkurtra për ndërtesat vijnë së shpejti.',
-    stub: 'Një tregim i shkurtër për këtë ndërtesë vjen së shpejti.',
+    note: 'Çoje topin te dera e ndërtesës dhe mëso diçka nga historia e saj.',
     loading: 'Po ngarkohen modelet 3D… {n}/{t}',
     loadFail: 'Disa modele nuk u ngarkuan. Kontrollo internetin dhe rifresko faqen.',
     par: 'Tri yje: deri në {par} s', newBest: 'Rekord i ri', allDone: 'I përfundove të gjitha nivelet.',
@@ -75,8 +73,7 @@ const TXT = {
     complete: 'Well done!', time: 'Time', next: 'Next level', again: 'Again', levels: 'Levels',
     spinL: 'Turn the cube left', spinR: 'Turn the cube right', flat: 'Level', flatLabel: 'Level the ball’s face',
     restart: 'Start over', soundOn: 'Mute', soundOff: 'Unmute', menu: 'Levels',
-    note: 'Short stories about the buildings are coming soon.',
-    stub: 'A short story about this building is coming soon.',
+    note: 'Roll the ball to a building’s door to learn a little of its history.',
     loading: 'Loading 3D models… {n}/{t}',
     loadFail: 'Some models didn’t load. Check the connection and reload the page.',
     par: 'Three stars: {par} s or less', newBest: 'New best', allDone: 'All levels complete.',
@@ -370,7 +367,7 @@ async function requestWake() { try { if (!wakeLock && navigator.wakeLock) { wake
 // ---------- HUD / screens ----------
 const fmtTime = (s) => { const m = Math.floor(s / 60), r = s - m * 60; return `${m}:${r < 10 ? '0' : ''}${r.toFixed(1)}`; };
 const levelName = (k) => LEVELS[k].name[lang];
-const isUnlocked = (k) => k === 0 || !!save.done[LEVELS[k - 1].key];
+const isUnlocked = () => true;   // every level is open from the start
 
 function renderHud() {
   els.lvlNum.textContent = String(levelIndex + 1);
@@ -442,6 +439,7 @@ function renderTitle() {
   $('btnPlay').textContent = `${t('play')} · ${t('level')} ${levelIndex + 1}`;
 }
 
+const ABOUT_MS = 7000;   // building card with its short history: long enough to read two sentences
 function showToast(name, meta, text, ms = 3200) {
   $('toastName').textContent = name; $('toastMeta').textContent = meta; $('toastText').textContent = text || '';
   $('toastText').hidden = !text;
@@ -486,7 +484,7 @@ function handleEvents(ev) {
   for (const e of ev) {
     if (e.type === 'visit') {
       audio.play('visit', e.count); buzz(25);
-      showToast(e.building.name[lang], `${t('visited')} ${e.count}/${e.total}`, t('stub'));
+      showToast(e.building.name[lang], `${t('visited')} ${e.count}/${e.total}`, e.building.about ? e.building.about[lang] : '', ABOUT_MS);
       renderHud();
     } else if (e.type === 'complete') {
       audio.play('complete'); buzz([30, 60, 30]);

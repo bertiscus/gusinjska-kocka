@@ -2,7 +2,7 @@
 // build.mjs writes this file to /sw.js with the version and the file list filled in.
 // Network first: with a connection the newest version of the game is always used; the saved
 // copy is used when there is no connection, or when the network takes more than a few seconds.
-const CACHE = 'gusinjska-kocka-69b8a5ff7e';
+const CACHE = 'gusinjska-kocka-1d9d2ed7f6';
 const FILES = [
   "index.html",
   "manifest.webmanifest",

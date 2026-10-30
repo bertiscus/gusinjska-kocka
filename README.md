@@ -6,7 +6,9 @@ A tilt-maze game on a six-sided cube. Tilt the cube, roll the ball through a maz
 
 **Languages:** Montenegrin, Albanian and English (switch on the start screen; picked from the phone's language the first time).
 
-**Levels:** 1 Kula, 2 Izvori, 3 Cijela kocka, 4 Bogomolje, 5 Gusinje (all nine buildings).
+**Levels:** 1 Kula, 2 Izvori, 3 Cijela kocka, 4 Bogomolje, 5 Gusinje (all nine buildings). All five are open from the start.
+
+**Building facts:** when the ball reaches a building's door, its card shows one or two sentences about it (when it was built, plus one notable fact) for 7 seconds, in the chosen language. The texts are in `src/core.js` (`BUILDINGS[...].about`); sources are listed under *Building facts: sources* below.
 
 **AR:** on the start screen, tap **Igraj s AR kockom / Luaj me kubin AR / Play with the AR cube** and point the phone's camera at the printed AR cube (the 70 mm cube from `wave84mn/ar-cube`, or the paper one in `ar/AR_cube_paper_test.pdf`). The game cube is drawn onto the real cube; tilt the real cube and the ball rolls downhill. The flat card (page 1 of the PDF) works too: the game cube stands on it. AR needs the camera, so it works from the GitHub Pages site in Chrome (Android) or Safari (iPhone), not inside the Claude preview.
 
@@ -121,3 +123,19 @@ Needs Python 3 with numpy, scipy, opencv-python and Pillow, plus Node.
 3. `python3 -I tools/convert.py tools/models.json <id> --out models`
 4. Look at `tools/tmp/<id>/<id>_check.png` (scan vs game version, five views). Use `--preview-only` to check orientation first.
 5. Give it a letter in `BUILDINGS` in `src/core.js`, use the letter in a level map, then `node build.mjs` and `node test/core.test.mjs`.
+
+## Building facts: sources
+
+Only facts found in at least one published source are used; anything uncertain was left out.
+
+| Building | Facts used | Sources |
+|---|---|---|
+| Kula Rašića | Built 1904 by the sons of Ramadan Raš Radončić; descendants took the surname Rašić; stands on Tablja hill, the town's highest point | Turistička organizacija Gusinje, after H. R. Markišić, *Kulturno-istorijsko nasljeđe plavsko-gusinjskog kraja* (gusinje-plav.com archive, 12 Dec 2023) |
+| Sebilj | Replica of the Sarajevo Sebilj on Baščaršija; a sebilj is a public fountain with free water | RTV Slon, 4 Sep 2024 ("Uskoro izgradnja Sahat kule i Muzeja u Gusinju"); Wikipedia, *Sebilj in Sarajevo* |
+| Kula Nekovića | Stone tower at the entrance to Gusinje, about 1840 (168 years old in 2009); thought to be the oldest surviving house in the area; restored, now takes guests | Mešihat IZ CG, 2 Nov 2009 ("Vraća se život kuli Nekovića u Gusinju"); Radio Sarajevo, 13 Aug 2026; Adriacom; accommodation listings |
+| Sahat kula | At the entrance to Gusinje; foundation stone 4 Sep 2024, opened 24 Jul 2026; funded by emigrants from Plav and Gusinje in New York | Radio Fatih and RTV Slon, 4 Sep 2024; Sandžačke, 25 Jul 2026; Radio Sarajevo, 13 Aug 2026 |
+| Opština Gusinje | Separate municipality since 2014 (split from Plav); first written mention 1330 | Wikipedia, *Gusinje Municipality*; Austrian Academy of Sciences, *Maps of Power* (Gusinje) |
+| Čekića džamija | Built 1687 by the Čekić (Albanian: Çekaj) brotherhood; one of the oldest mosques in town | Wikipedia, *Gusinje*; *Studija zaštite kulturnih dobara Opštine Plav*; Adriacom |
+| Vezirova džamija | Built 1626, rebuilt 1765; shingle roof and wooden minaret | *Studija zaštite kulturnih dobara Opštine Plav*; Wikipedia, *Gusinje*; Lonely Planet; Radio Sarajevo, 13 Aug 2026 |
+| Crkva sv. Antona | Catholic church in Dolja near Gusinje, built 1933–1936; houses an ethnographic museum | *Studija zaštite kulturnih dobara Opštine Plav*; Wikipedia, *Gusinje Municipality* |
+| Crkva sv. Đorđa | Single-nave Orthodox church, built 1926 on the site of an older church; protected cultural monument | Wikipedia, *Gusinje Municipality*; *Studija zaštite kulturnih dobara Opštine Plav*; Radio Sarajevo, 13 Aug 2026 |
