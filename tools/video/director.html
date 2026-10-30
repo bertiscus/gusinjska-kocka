@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="sr-Latn-ME">
+<head>
+<meta charset="utf-8">
+<title>Gusinjska kocka showcase</title>
+<style>
+@font-face { font-family: 'Marcellus'; src: url('fonts/Marcellus-Regular.ttf'); }
+@font-face { font-family: 'Golos Text'; src: url('fonts/GolosText-VF.ttf'); font-weight: 400 900; }
+:root {
+  --t0: #0e2427; --t1: #163a3b; --t2: #1f4a45;
+  --cream: #efe9dc; --mint: #4fc3b5; --mist: #a9d4ca; --gold: #d9a441;
+}
+html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: var(--t0); }
+* { box-sizing: border-box; }
+.layer { position: absolute; inset: 0; }
+.lg-ink { fill: var(--lg-ink); }
+.lg-acc { fill: var(--lg-accent); }
+
+/* branded stage */
+#stage { background:
+  radial-gradient(70% 38% at 50% 60%, rgba(79, 195, 181, 0.16), rgba(79, 195, 181, 0) 70%),
+  radial-gradient(120% 70% at 50% 115%, #2c5a52 0%, rgba(44, 90, 82, 0) 60%),
+  linear-gradient(180deg, #0b1d20 0%, var(--t1) 55%, var(--t2) 100%); }
+#hills { position: absolute; left: 0; right: 0; bottom: 0; width: 1080px; height: 520px; }
+#hills .h1 { fill: rgba(79, 195, 181, 0.07); }
+#hills .h2 { fill: rgba(10, 28, 30, 0.6); }
+#hills .rim { fill: none; stroke: rgba(79, 195, 181, 0.5); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-dasharray: 1700; }
+
+/* full-bleed footage */
+#full img { position: absolute; inset: 0; width: 1080px; height: 1920px; object-fit: cover; }
+#fullScrimBottom { position: absolute; left: 0; right: 0; bottom: 0; height: 900px;
+  background: linear-gradient(180deg, rgba(11, 29, 32, 0) 0%, rgba(11, 29, 32, 0.72) 55%, rgba(11, 29, 32, 0.9) 100%); }
+
+/* phone */
+#phone { position: absolute; left: 122px; top: 436px; width: 836px; height: 1458px; padding: 18px; border-radius: 84px;
+  background: linear-gradient(145deg, #2a3436, #0b1213 40%, #1a2224); transform-origin: 50% 50%;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06) inset, 0 60px 120px rgba(0, 0, 0, 0.55), 0 0 90px rgba(79, 195, 181, 0.12); }
+#screen { position: relative; width: 800px; height: 1422px; border-radius: 66px; overflow: hidden; background: #000; }
+#screen img { position: absolute; inset: 0; width: 100%; height: 100%; }
+#punch { position: absolute; left: 50%; top: 22px; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%; background: #05090a;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04); }
+#glare { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 32%); pointer-events: none; }
+#scrimTop { position: absolute; left: 0; right: 0; top: 0; height: 760px;
+  background: linear-gradient(180deg, rgba(11, 29, 32, 0.86) 0%, rgba(11, 29, 32, 0.62) 45%, rgba(11, 29, 32, 0) 100%); }
+
+/* captions */
+.cap { position: absolute; left: 70px; right: 70px; text-align: center; color: var(--cream); }
+.cap .k { font: 600 30px/1 'Golos Text'; letter-spacing: 0.32em; text-transform: uppercase; color: var(--mint); margin: 0 0 22px; padding-left: 0.32em; }
+.cap .h { font: 400 76px/1.06 'Marcellus'; margin: 0; letter-spacing: 0.005em; text-wrap: balance; }
+.cap .e { font: 400 36px/1.3 'Golos Text'; color: var(--mist); margin: 20px 0 0; opacity: 0.92; text-wrap: balance; }
+.cap .h .dim { color: rgba(169, 212, 202, 0.38); }
+.cap .h .on { color: var(--cream); }
+.cap.title .h { font-size: 128px; line-height: 1; }
+.cap.title .e1 { font: 500 40px/1.3 'Golos Text'; color: var(--cream); margin: 34px 0 0; text-wrap: balance; }
+.cap.title .e { margin-top: 12px; }
+.cap span.line { display: block; }
+
+/* logo opening */
+#logoScene { background:
+  radial-gradient(120% 80% at 50% 110%, #2c5a52 0%, rgba(44, 90, 82, 0) 60%),
+  linear-gradient(180deg, #0e2427 0%, #163a3b 55%, #1f4a45 100%); }
+#logoWrap { position: absolute; left: 130px; top: 700px; width: 820px; transform-origin: 50% 50%; }
+#logoWrap svg { display: block; width: 100%; height: auto; overflow: visible; --lg-ink: var(--cream); --lg-accent: var(--mint);
+  filter: drop-shadow(0 10px 40px rgba(79, 195, 181, 0.22)); }
+#logoWrap g, #logoWrap .lg-px { transform-box: fill-box; }
+#presents { position: absolute; left: 0; right: 0; top: 1140px; text-align: center; font: 500 34px/1 'Golos Text'; letter-spacing: 0.34em;
+  text-transform: uppercase; color: rgba(239, 233, 220, 0.72); padding-left: 0.34em; }
+#smallLogo { position: absolute; left: 330px; top: 120px; width: 420px; }
+#smallLogo svg { width: 100%; height: auto; display: block; --lg-ink: var(--cream); --lg-accent: var(--mint); }
+
+/* outro */
+#outro .logo { position: absolute; left: 230px; top: 250px; width: 620px; }
+#outro .logo svg { width: 100%; height: auto; display: block; --lg-ink: var(--cream); --lg-accent: var(--mint); }
+#outro .t { position: absolute; left: 0; right: 0; top: 590px; text-align: center; font: 400 124px/1 'Marcellus'; color: var(--cream); }
+#outro .l1 { position: absolute; left: 0; right: 0; top: 760px; text-align: center; font: 500 42px/1.3 'Golos Text'; color: var(--cream); }
+#outro .l2 { position: absolute; left: 0; right: 0; top: 818px; text-align: center; font: 400 34px/1.3 'Golos Text'; color: var(--mist); }
+#qrCard { position: absolute; left: 330px; top: 930px; width: 420px; height: 420px; padding: 14px; border-radius: 34px; background: #fff;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.2); }
+#qrCard svg { width: 100%; height: 100%; display: block; }
+#outro .url { position: absolute; left: 0; right: 0; top: 1400px; text-align: center; font: 600 40px/1 'Golos Text'; color: var(--mint); letter-spacing: 0.01em; }
+#outro .plat { position: absolute; left: 0; right: 0; top: 1470px; text-align: center; font: 500 28px/1 'Golos Text'; letter-spacing: 0.3em;
+  text-transform: uppercase; color: rgba(169, 212, 202, 0.75); padding-left: 0.3em; }
+
+#fade { background: #071416; opacity: 0; }
+</style>
+</head>
+<body>
+<div id="stage" class="layer">
+  <svg id="hills" viewBox="0 0 400 100" preserveAspectRatio="none" aria-hidden="true">
+    <path class="h1" d="M0 100 V58 L40 40 L70 52 L118 22 L150 44 L182 30 L214 50 L250 18 L292 46 L330 34 L362 50 L400 38 V100 Z"/>
+    <path class="h2" d="M0 100 V74 L36 62 L64 70 L104 52 L140 68 L180 56 L224 72 L262 58 L300 70 L340 60 L400 72 V100 Z"/>
+    <path class="rim" id="rim" d="M0 58 L40 40 L70 52 L118 22 L150 44 L182 30 L214 50 L250 18 L292 46 L330 34 L362 50 L400 38"/>
+  </svg>
+</div>
+
+<div id="full" class="layer"><img id="fullImg" alt=""><div id="fullScrimBottom"></div></div>
+
+<div id="phone"><div id="screen"><img id="scrA" alt=""><img id="scrB" alt=""><div id="punch"></div><div id="glare"></div></div></div>
+<div id="scrimTop"></div>
+
+<div id="caps"></div>
+
+<div id="logoScene" class="layer">
+  <svg viewBox="0 0 400 100" preserveAspectRatio="none" style="position:absolute;left:0;right:0;bottom:0;width:1080px;height:520px" aria-hidden="true">
+    <path d="M0 100 V58 L40 40 L70 52 L118 22 L150 44 L182 30 L214 50 L250 18 L292 46 L330 34 L362 50 L400 38 V100 Z" fill="rgba(79,195,181,0.07)"/>
+    <path d="M0 100 V74 L36 62 L64 70 L104 52 L140 68 L180 56 L224 72 L262 58 L300 70 L340 60 L400 72 V100 Z" fill="rgba(14,36,39,0.55)"/>
+    <path id="rim2" d="M0 58 L40 40 L70 52 L118 22 L150 44 L182 30 L214 50 L250 18 L292 46 L330 34 L362 50 L400 38" fill="none" stroke="rgba(79,195,181,0.5)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-dasharray="1700"/>
+  </svg>
+  <div id="logoWrap"><!--LOGO--></div>
+  <div id="presents">predstavlja · presents</div>
+</div>
+<div id="smallLogo"><!--LOGO--></div>
+
+<div id="outro" class="layer">
+  <div class="logo"><!--LOGO--></div>
+  <div class="t">Gusinjska kocka</div>
+  <div class="l1">Igraj besplatno u pregledniku</div>
+  <div class="l2">Play free in your browser</div>
+  <div id="qrCard"><!--QR--></div>
+  <div class="url">bertiscus.github.io/gusinjska-kocka</div>
+  <div class="plat">Android · iPhone · Windows</div>
+</div>
+
+<div id="fade" class="layer"></div>
+
+<script>
+const TL = /*TL*/null;
+const F = /*FRAMES*/null;   // frame folders and counts
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, d) => clamp((t - a) / d);
+const eOut = (x) => 1 - Math.pow(1 - x, 3);
+const eInOut = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const lerp = (a, b, x) => a + (b - a) * x;
+
+// ---------- captions ----------
+const CAPS = [
+  { id: 'title', cls: 'title', a: 3.35, b: 6.0, pos: 'bottom', y: 1250,
+    html: '<p class="h">Gusinjska kocka</p><p class="e1">Nagni kocku. Otkotrljaj kuglu.<br>Upoznaj Gusinje.</p><p class="e">Tilt the cube. Roll the ball. Discover Gusinje.</p>' },
+  { id: 'c3a', a: 6.35, b: 8.85, y: 112, html: '<p class="k">Igraj · Play</p><p class="h">Nagni kocku, kugla se kotrlja</p><p class="e">Tilt the cube and the ball rolls</p>' },
+  { id: 'c3b', a: 8.95, b: 13.2, y: 112, html: '<p class="k">Priče · Stories</p><p class="h">Svaka građevina ima svoju priču</p><p class="e">Every building has a story to tell</p>' },
+  { id: 'c4', a: 13.3, b: 18.55, y: 112, html: '<p class="k">5 nivoa · 5 levels</p><p class="h">Devet građevina Gusinja</p><p class="e">Nine landmarks of Gusinje, in our own 3D models</p>' },
+  { id: 'c5a', a: 19.25, b: 21.85, y: 210, html: '<p class="k">AR</p><p class="h">Igraj na štampanoj kocki</p><p class="e">Play in AR on a printed paper cube</p>' },
+  { id: 'c5b', a: 21.95, b: 24.6, y: 210, html: '<p class="k">AR</p><p class="h">Nagni pravu kocku, kugla prati</p><p class="e">Tilt the real cube, the ball follows</p>' },
+  { id: 'c6', a: 24.95, b: 27.6, y: 112, html: '<p class="k">Tri jezika · Three languages</p><p class="h"><span id="lME">Crnogorski</span> · <span id="lSQ">Shqip</span> · <span id="lEN">English</span></p><p class="e">Izaberi jezik jednim dodirom · One tap to switch</p>' },
+];
+for (const c of CAPS) {
+  const d = document.createElement('div');
+  d.className = 'cap ' + (c.cls || ''); d.id = c.id; d.innerHTML = c.html;
+  d.style.top = c.y + 'px';
+  $('caps').appendChild(d);
+}
+function renderCap(c, t) {
+  const el = $(c.id);
+  const inP = prog(t, c.a, 0.55), outP = prog(t, c.b - 0.3, 0.3);
+  if (t < c.a || t > c.b) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  [...el.children].forEach((ch, i) => {
+    const p = eOut(prog(t, c.a + i * 0.09, 0.55));
+    ch.style.opacity = (p * (1 - outP)).toFixed(3);
+    ch.style.transform = `translateY(${((1 - p) * 34 - outP * 22).toFixed(1)}px)`;
+  });
+}
+
+// ---------- footage ----------
+const pad = (n) => String(n).padStart(4, '0');
+function frameUrl(name, k) { const n = F[name]; return `frames/${name}/${pad(Math.min(n - 1, Math.max(0, Math.round(k))))}.jpg`; }
+const pending = [];
+function setImg(el, url) {
+  if (el.dataset.src !== url) { el.dataset.src = url; el.src = url; pending.push(el.decode().catch(() => {})); }
+}
+function footage(t) {
+  // what the phone screen (or the full frame) shows at time t: [url, url2, mix]
+  const at = (name, t0, off = 0) => frameUrl(name, (t - t0) * TL.fps + off);
+  if (t < TL.s3) return [at('spin', TL.s2), null, 0];
+  if (t < TL.s4) return [at('level1', TL.s3, TL.l1_start), null, 0];
+  if (t < TL.s4 + 0.4) return [at('level1', TL.s3, TL.l1_start), at('level5', TL.s4), eInOut(prog(t, TL.s4, 0.4))];
+  if (t < TL.s5) return [at('level5', TL.s4), null, 0];
+  if (t < TL.s5 + 0.35) return [at('level5', TL.s4), at('ar', TL.s5), eInOut(prog(t, TL.s5, 0.35))];
+  if (t < TL.s6) return [at('ar', TL.s5), null, 0];
+  if (t < TL.s6 + 0.45) return [at('ar', TL.s5), at('lang', TL.s6), eInOut(prog(t, TL.s6 + 0.1, 0.35))];
+  return [at('lang', TL.s6), null, 0];
+}
+
+// ---------- logo assembly ----------
+const logoEls = { base: [], house: [], w1: [], w2: [], px: [] };
+function initLogo() {
+  const w = $('logoWrap');
+  logoEls.base = [w.querySelector('.lg-base')]; logoEls.house = [w.querySelector('.lg-house')];
+  logoEls.w1 = [w.querySelector('.lg-word1')]; logoEls.w2 = [w.querySelector('.lg-word2')];
+  logoEls.px = [...w.querySelectorAll('.lg-px')];
+  w.querySelectorAll('g').forEach((g) => { g.style.transformOrigin = '50% 100%'; });
+  logoEls.px.forEach((p) => { p.style.transformOrigin = '50% 50%'; });
+}
+function renderLogo(t) {
+  const set = (els, o, tr) => els.forEach((e) => { e.style.opacity = o.toFixed(3); e.style.transform = tr; });
+  const b = eOut(prog(t, 0.15, 0.7)); set(logoEls.base, b, `scaleX(${lerp(0.6, 1, b)})`);
+  const h = eOut(prog(t, 0.32, 0.7)); set(logoEls.house, h, `translateY(${(1 - h) * 14}%)`);
+  logoEls.px.forEach((p, i) => {
+    const x = prog(t, 0.6 + i * 0.055, 0.45);
+    const s = x < 0.7 ? lerp(0.2, 1.12, eOut(x / 0.7)) : lerp(1.12, 1, (x - 0.7) / 0.3);
+    p.style.opacity = clamp(x / 0.5).toFixed(3); p.style.transform = `scale(${s.toFixed(3)})`;
+  });
+  const w1 = eOut(prog(t, 1.0, 0.7)); set(logoEls.w1, w1, `translateX(${(1 - w1) * -6}%)`);
+  const w2 = eOut(prog(t, 1.15, 0.7)); set(logoEls.w2, w2, `translateX(${(1 - w2) * -6}%)`);
+  const pr = eOut(prog(t, 1.85, 0.6));
+  $('presents').style.opacity = pr; $('presents').style.transform = `translateY(${(1 - pr) * 16}px)`;
+  const zoom = lerp(1, 1.045, eInOut(prog(t, 0, 3.4)));
+  $('logoWrap').style.transform = `scale(${zoom})`;
+  $('rim2').style.strokeDashoffset = (1700 * (1 - eInOut(prog(t, 0.2, 2.2)))).toFixed(1);
+}
+
+// ---------- main ----------
+const PH = { x: 122, y: 436, w: 836, h: 1458, scr: 800 / 1080 };
+async function render(t) {
+  pending.length = 0;
+  // logo opening (0 - 3.45)
+  const logoOut = eInOut(prog(t, TL.s2, 0.45));
+  $('logoScene').style.display = t < TL.s2 + 0.45 ? 'block' : 'none';
+  $('logoScene').style.opacity = 1 - logoOut;
+  $('logoScene').style.transform = `scale(${1 + 0.06 * logoOut})`;
+  if (t < TL.s2 + 0.45) renderLogo(t);
+
+  const [u1, u2, mix] = footage(t);
+  // full-bleed title shot (3 - 6.4)
+  const fullOn = t >= TL.s2 - 0.01 && t < TL.s3 + 0.45;
+  $('full').style.display = fullOn ? 'block' : 'none';
+  if (fullOn) {
+    setImg($('fullImg'), u1);
+    const fin = eInOut(prog(t, TL.s2, 0.45)), fout = eInOut(prog(t, TL.s3, 0.45));
+    $('full').style.opacity = (fin * (1 - fout)).toFixed(3);
+    $('fullImg').style.transform = `scale(${lerp(1.08, 1.0, eOut(prog(t, TL.s2, 3.0)))})`;
+    $('fullScrimBottom').style.opacity = eOut(prog(t, TL.s2 + 0.2, 0.6));
+  }
+  // small logo over the title shot
+  const sl = eOut(prog(t, TL.s2 + 0.25, 0.6)) * (1 - eInOut(prog(t, TL.s3 - 0.3, 0.4)));
+  $('smallLogo').style.display = 'none'; $('smallLogo').style.opacity = sl;
+  $('smallLogo').style.transform = `translateY(${(1 - sl) * -14}px)`;
+
+  // phone (6 - 28)
+  const phoneOn = t >= TL.s3 && t < TL.s7 + 0.8;
+  $('phone').style.display = phoneOn ? 'block' : 'none';
+  if (phoneOn) {
+    setImg($('scrA'), u1);
+    if (u2) { setImg($('scrB'), u2); $('scrB').style.opacity = mix.toFixed(3); $('scrB').style.display = 'block'; }
+    else $('scrB').style.display = 'none';
+    // entrance, AR zoom in/out, exit
+    const enter = eOut(prog(t, TL.s3, 0.75));
+    const zin = eInOut(prog(t, TL.s5, 0.7)), zout = eInOut(prog(t, TL.s6, 0.7));
+    const z = zin * (1 - zout);                     // 0 = phone, 1 = full frame
+    const exit = eInOut(prog(t, TL.s7, 0.45));
+    const sFull = 1080 / 800;
+    const s = lerp(1, sFull, z) * lerp(1, 0.92, exit);
+    const cx = 540, cyPhone = PH.y + PH.h / 2, cyFull = 960;
+    const float = Math.sin(t * 1.6) * 5 * (1 - z);
+    const ty = lerp(cyPhone, cyFull, z) - cyPhone + (1 - enter) * 1300 + float + exit * 700;
+    $('phone').style.transform = `translateY(${ty.toFixed(1)}px) scale(${s.toFixed(4)})`;
+    $('phone').style.opacity = Math.pow(1 - exit, 1.6).toFixed(3);
+    $('phone').style.borderRadius = `${lerp(84, 0, z)}px`; $('screen').style.borderRadius = `${lerp(66, 0, z)}px`;
+    $('phone').style.padding = '18px';
+    $('punch').style.opacity = 1 - z; $('glare').style.opacity = 1 - z;
+  }
+  // scrim at the top over full-frame AR
+  const zNow = eInOut(prog(t, TL.s5, 0.7)) * (1 - eInOut(prog(t, TL.s6, 0.7)));
+  $('scrimTop').style.opacity = zNow.toFixed(3);
+  $('stage').style.display = t >= TL.s3 - 0.01 ? 'block' : 'none';
+  $('rim').style.strokeDashoffset = (1700 * (1 - eInOut(prog(t, TL.s3, 2.0)))).toFixed(1);
+
+  // captions
+  for (const c of CAPS) renderCap(c, t);
+  if (t >= TL.s6) {
+    const act = t < TL.lang[0] ? 'lME' : t < TL.lang[1] ? 'lSQ' : 'lEN';
+    for (const id of ['lME', 'lSQ', 'lEN']) $(id).className = id === act ? 'on' : 'dim';
+  }
+
+  // outro
+  const oOn = t >= TL.s7 - 0.01;
+  $('outro').style.display = oOn ? 'block' : 'none';
+  if (oOn) {
+    const items = [['#outro .logo', 0.3], ['#outro .t', 0.45], ['#outro .l1', 0.6], ['#outro .l2', 0.67], ['#qrCard', 0.78], ['#outro .url', 0.95], ['#outro .plat', 1.03]];
+    for (const [sel, d] of items) {
+      const p = eOut(prog(t, TL.s7 + d, 0.6));
+      const el = document.querySelector(sel);
+      el.style.opacity = p.toFixed(3);
+      el.style.transform = sel === '#qrCard' ? `translateY(${(1 - p) * 40}px) scale(${lerp(0.94, 1, p)})` : `translateY(${(1 - p) * 30}px)`;
+    }
+  }
+  $('fade').style.opacity = eInOut(prog(t, TL.end - 0.55, 0.5)).toFixed(3);
+  await Promise.all(pending);
+  await document.fonts.ready;
+  return true;
+}
+initLogo();
+window.render = render;
+</script>
+</body>
+</html>
