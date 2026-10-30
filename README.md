@@ -2,6 +2,8 @@
 
 A tilt-maze game on a six-sided cube. Tilt the cube, roll the ball through a maze that wraps around all six faces, and visit the buildings of Gusinje by rolling the ball to their doors. Part of Xplore Prokletije.
 
+**Opening screen:** the game opens with *Xplore Prokletije – predstavlja / prezanton / presents – Gusinjska kocka* for about 2.5 s; a tap skips it, `?nointro` turns it off.
+
 **Languages:** Montenegrin, Albanian and English (switch on the start screen; picked from the phone's language the first time).
 
 **Levels:** 1 Kula, 2 Izvori, 3 Cijela kocka, 4 Bogomolje, 5 Gusinje (all nine buildings).

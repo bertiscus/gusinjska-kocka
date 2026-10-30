@@ -7,6 +7,7 @@ import { ArSession } from './ar/session.js';
 // ---------- text ----------
 const TXT = {
   me: {
+    presents: 'predstavlja',
     tagline: 'Nagni kocku i otkotrljaj kuglu do gusinjskih građevina.',
     play: 'Igraj', level: 'Nivo', locked: 'Zaključano', best: 'Najbolje',
     hint: 'Prevuci prstom preko ekrana. Kocka se naginje, a kugla se kotrlja nizbrdo.',
@@ -34,6 +35,7 @@ const TXT = {
     errFailed: 'Kamera se nije pokrenula. Otvori igru u Chromeu (Android) ili Safariju (iPhone).',
   },
   sq: {
+    presents: 'prezanton',
     tagline: 'Anoje kubin dhe rrokullise topin deri te ndërtesat e Gucisë.',
     play: 'Luaj', level: 'Niveli', locked: 'E kyçur', best: 'Rekordi',
     hint: 'Rrëshqit gishtin nëpër ekran. Kubi anohet dhe topi rrokulliset tatëpjetë.',
@@ -61,6 +63,7 @@ const TXT = {
     errFailed: 'Kamera nuk u ndez. Hape lojën në Chrome (Android) ose Safari (iPhone).',
   },
   en: {
+    presents: 'presents',
     tagline: 'Tilt the cube and roll the ball to the landmarks of Gusinje.',
     play: 'Play', level: 'Level', locked: 'Locked', best: 'Best',
     hint: 'Drag across the screen. The cube tilts and the ball rolls downhill.',
@@ -869,6 +872,25 @@ function draw() {
 }
 
 // ---------- boot ----------
+// ---------- opening screen: Xplore Prokletije ----------
+function runIntro() {
+  const el = $('intro');
+  if (!el) return;
+  $('introSub').textContent = t('presents');
+  const skip = params.has('nointro') || location.hash === '#demo';
+  let gone = false;
+  const hide = () => {
+    if (gone) return; gone = true;
+    el.classList.add('is-out');
+    setTimeout(() => { el.hidden = true; }, 650);
+  };
+  if (skip) { el.hidden = true; return; }
+  el.addEventListener('pointerdown', () => { audio.init(); hide(); });
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(hide, reduce ? 1400 : 2700);
+}
+runIntro();
+
 function boot(data = {}) {
   try { R = new Renderer(els.gl); } catch (err) {
     els.nogl.hidden = false; els.nogl.textContent = t('noGL'); els.title.hidden = true; return;

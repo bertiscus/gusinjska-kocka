@@ -171,6 +171,31 @@ button { font: inherit; color: inherit; }
 
 .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-left, 0px)); text-align: center; font-size: 1rem; }
 
+/* ---------- opening screen ---------- */
+.intro {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; cursor: pointer;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background:
+    radial-gradient(120% 80% at 50% 110%, #2c5a52 0%, rgba(44, 90, 82, 0) 60%),
+    linear-gradient(180deg, #0e2427 0%, #163a3b 55%, #1f4a45 100%);
+  color: #efe9dc;
+  transition: opacity 0.6s ease, visibility 0.6s;
+}
+.intro.is-out { opacity: 0; visibility: hidden; pointer-events: none; }
+.intro-inner { display: grid; justify-items: center; text-align: center; }
+.intro-ridge { width: min(220px, 60vw); height: auto; margin-bottom: 18px; overflow: visible; }
+.intro-ridge path { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 400; stroke-dashoffset: 400; animation: ridge-draw 1.3s cubic-bezier(.4, 0, .2, 1) forwards; }
+.ridge-back { stroke: #8fb9ae; stroke-width: 2; }
+.ridge-front { stroke: #4fc3b5; stroke-width: 2.6; animation-delay: 0.15s !important; }
+.ridge-snow { stroke: #ffffff; stroke-width: 2.6; animation-delay: 0.7s !important; }
+@keyframes ridge-draw { to { stroke-dashoffset: 0; } }
+.intro p { margin: 0; opacity: 0; animation: intro-up 0.7s cubic-bezier(.2, .8, .2, 1) forwards; }
+.intro-x { font-family: var(--display); font-size: clamp(3rem, 15vw, 4.4rem); line-height: 0.95; letter-spacing: 0.01em; animation-delay: 0.45s !important; }
+.intro-p { font-family: var(--ui); font-weight: 600; font-size: clamp(0.9rem, 4.2vw, 1.15rem); letter-spacing: 0.46em; text-transform: uppercase; margin-right: -0.46em !important; color: #a9d4ca; margin-top: 8px !important; animation-delay: 0.65s !important; }
+.intro-sub { font-size: 0.85rem; color: rgba(239, 233, 220, 0.7); margin-top: 34px !important; animation-delay: 1.05s !important; }
+.intro-game { font-family: var(--display); font-size: 1.6rem; margin-top: 6px !important; animation-delay: 1.2s !important; }
+@keyframes intro-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
 /* ---------- zoom ---------- */
 .zoom {
   position: absolute; top: 50%; right: max(12px, env(safe-area-inset-right, 0px)); transform: translateY(-50%);
@@ -216,8 +241,23 @@ body.is-ar .lvl > span:last-child { background: var(--panel); border: 1px solid 
 }
 @media (prefers-reduced-motion: reduce) {
   .toast.is-in, .finger::before, .stars .on, .ar-hint-cube { animation: none; }
+  .intro p, .intro-ridge path { animation: none; opacity: 1; stroke-dashoffset: 0; }
 }
 </style>
+
+<div id="intro" class="intro" role="img" aria-label="Xplore Prokletije">
+  <div class="intro-inner">
+    <svg class="intro-ridge" viewBox="0 0 240 70" aria-hidden="true">
+      <path class="ridge-back" d="M4 62 L38 34 L52 44 L80 14 L98 30 L112 22 L138 46 L160 26 L176 36 L198 18 L236 62"/>
+      <path class="ridge-front" d="M4 62 L30 48 L50 56 L74 38 L96 52 L120 34 L146 54 L170 42 L196 56 L236 62"/>
+      <path class="ridge-snow" d="M72 20 L80 14 L88 22 M190 24 L198 18 L205 25"/>
+    </svg>
+    <p class="intro-x">Xplore</p>
+    <p class="intro-p">Prokletije</p>
+    <p class="intro-sub" id="introSub">predstavlja</p>
+    <p class="intro-game">Gusinjska kocka</p>
+  </div>
+</div>
 
 <div id="stage">
   <canvas id="bg" aria-hidden="true"></canvas>
