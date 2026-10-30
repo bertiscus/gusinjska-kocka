@@ -2,6 +2,7 @@
 import { N, H, BALL_R, FACES, LEVELS, PARS, BUILDINGS, parseLevel, Game, makeAutopilot, tileU, tileV, isSolidChar, isDoorChar, isBuildingChar, v3, stars, facePoint } from './core.js';
 import { q, m4, MeshBuilder, Renderer, hex, jitter, shade, mulberry } from './render.js';
 import { SoundKit } from './sound.js';
+import { ArSession } from './ar/session.js';
 
 // ---------- text ----------
 const TXT = {
@@ -21,6 +22,15 @@ const TXT = {
     par: 'Tri zvjezdice: do {par} s', newBest: 'Novi rekord', allDone: 'Svi nivoi su završeni.',
     noGL: 'Ovaj preglednik ne može prikazati 3D. Probaj u Chromeu ili Safariju.',
     keys: 'Tastatura: strelice naginju, Q i E okreću, razmak poravnava.',
+    arPlay: 'Igraj s AR kockom', arStarting: 'Pokrećem kameru…', arExit: 'Igraj prstom',
+    arFind: 'Usmjeri kameru na kocku.', arFindSub: 'Drži kocku 20–35 cm od telefona, na dobrom svjetlu.',
+    arTurnUp: 'Okreni kocku tako da kugla bude gore.', arTurnSub: 'Igra kreće kad strana s kuglom bude ravno.',
+    arLost: 'Kocka se ne vidi. Igra čeka.', arNoSensor: 'Senzor nagiba nije dostupan, zato drži telefon uspravno.',
+    arPrint: 'Nemaš kocku? Isprintaj papirnu (PDF).',
+    errDenied: 'Pristup kameri je odbijen. Dozvoli kameru za ovu stranicu u postavkama preglednika.',
+    errNoCam: 'Na ovom uređaju nije pronađena kamera.',
+    errHere: 'Ovdje kamera nije dostupna. Za AR otvori igru na adresi:',
+    errFailed: 'Kamera se nije pokrenula. Otvori igru u Chromeu (Android) ili Safariju (iPhone).',
   },
   sq: {
     tagline: 'Anoje kubin dhe rrokullise topin deri te ndërtesat e Gucisë.',
@@ -38,6 +48,15 @@ const TXT = {
     par: 'Tri yje: deri në {par} s', newBest: 'Rekord i ri', allDone: 'I përfundove të gjitha nivelet.',
     noGL: 'Ky shfletues nuk mund të shfaqë 3D. Provo në Chrome ose Safari.',
     keys: 'Tastiera: shigjetat e anojnë kubin, Q dhe E e rrotullojnë, hapësira e drejton.',
+    arPlay: 'Luaj me kubin AR', arStarting: 'Po ndizet kamera…', arExit: 'Luaj me gisht',
+    arFind: 'Drejtoje kamerën nga kubi.', arFindSub: 'Mbaje kubin 20–35 cm larg telefonit, në dritë të mirë.',
+    arTurnUp: 'Ktheje kubin që topi të jetë sipër.', arTurnSub: 'Loja nis kur faqja me topin të jetë e drejtë.',
+    arLost: 'Kubi nuk shihet. Loja pret.', arNoSensor: 'Sensori i pjerrësisë nuk është i qasshëm, prandaj mbaje telefonin drejt.',
+    arPrint: 'S’ke kub? Printo një prej letre (PDF).',
+    errDenied: 'Qasja në kamerë u refuzua. Lejoje kamerën për këtë faqe te cilësimet e shfletuesit.',
+    errNoCam: 'Në këtë pajisje nuk u gjet kamerë.',
+    errHere: 'Kamera nuk është e qasshme këtu. Për AR hape lojën në adresën:',
+    errFailed: 'Kamera nuk u ndez. Hape lojën në Chrome (Android) ose Safari (iPhone).',
   },
   en: {
     tagline: 'Tilt the cube and roll the ball to the landmarks of Gusinje.',
@@ -55,6 +74,15 @@ const TXT = {
     par: 'Three stars: {par} s or less', newBest: 'New best', allDone: 'All levels complete.',
     noGL: 'This browser can’t show 3D. Try Chrome or Safari.',
     keys: 'Keyboard: arrows tilt, Q and E turn, space levels.',
+    arPlay: 'Play with the AR cube', arStarting: 'Starting the camera…', arExit: 'Play by touch',
+    arFind: 'Point the camera at the cube.', arFindSub: 'Hold the cube 20–35 cm from the phone, in good light.',
+    arTurnUp: 'Turn the cube so the ball is on top.', arTurnSub: 'The game starts when the ball’s face is level.',
+    arLost: 'Can’t see the cube. The game is waiting.', arNoSensor: 'No tilt sensor here, so hold the phone upright.',
+    arPrint: 'No cube? Print a paper one (PDF).',
+    errDenied: 'Camera access was blocked. Allow the camera for this site in the browser settings.',
+    errNoCam: 'No camera was found on this device.',
+    errHere: 'The camera isn’t available here. For AR, open the game at:',
+    errFailed: 'The camera didn’t start. Open the game in Chrome (Android) or Safari (iPhone).',
   },
 };
 
@@ -235,7 +263,7 @@ const $ = (id) => document.getElementById(id);
 const els = {
   stage: $('stage'), bg: $('bg'), gl: $('gl'), hud: $('hud'), controls: $('controls'), title: $('title'), done: $('done'),
   toast: $('toast'), hint: $('hint'), chips: $('chips'), time: $('time'), lvlNum: $('lvlNum'), lvlName: $('lvlName'),
-  levels: $('levels'), nogl: $('nogl'),
+  levels: $('levels'), nogl: $('nogl'), arHint: $('arHint'),
 };
 
 // ---------- sound (see sound.js; starts after the first tap, as browsers require) ----------
@@ -263,6 +291,13 @@ let camShift = 0.36, camZoom = 1.18, camEl = 0.6, demo = false, autopilot = null
 let toastTimer = 0, completeTimer = -1, idleSpin = 0, sharedMeshes = null;
 const keys = new Set();
 
+// ---------- AR mode: the printed cube drives the game ----------
+const SITE = 'https://bertiscus.github.io/gusinjska-kocka/';
+const params = new URLSearchParams(location.search);
+let mode = 'touch', ar = null, arStarting = false;
+let gAR = null, readyHold = 0, arView = null;
+const AR_SCALE = 1.02;    // draw the game cube a little larger than the real one so its edges stay hidden
+
 function startLevel(k, toScreen = 'play') {
   levelIndex = k;
   level = parseLevel(LEVELS[k]);
@@ -285,7 +320,9 @@ function setScreen(s) {
   els.done.hidden = s !== 'done';
   els.hud.hidden = s !== 'play';
   els.controls.hidden = s !== 'play';
-  els.hint.hidden = !(s === 'play' && game && game.phase === 'ready' && !demo);
+  els.hint.hidden = !(s === 'play' && game && game.phase === 'ready' && !demo && mode === 'touch');
+  if (s === 'title' && mode === 'ar') stopAR();
+  updateModeUI();
   if (s !== 'play') { els.toast.hidden = true; toastTimer = 0; }
   if (s === 'title') renderTitle();
   if (s === 'play') { requestWake(); placeToast(); }
@@ -326,6 +363,7 @@ function renderHud() {
   $('btnFlat').textContent = t('flat'); $('btnFlat').setAttribute('aria-label', t('flatLabel'));
   $('btnRestart').setAttribute('aria-label', t('restart'));
   $('btnMenu').setAttribute('aria-label', t('menu'));
+  $('btnExitAR').textContent = t('arExit');
   updateSoundBtn();
   $('hintText').textContent = t('hint');
   $('hintGoal').textContent = t('goal');
@@ -345,6 +383,8 @@ function renderTitle() {
   $('tagline').textContent = t('tagline');
   updateLoadNote();
   $('keys').textContent = t('keys');
+  if (!arStarting) $('btnAR').lastChild.textContent = t('arPlay');
+  $('arPrint').textContent = t('arPrint');
   document.documentElement.lang = { me: 'sr-Latn-ME', sq: 'sq', en: 'en' }[lang];
   document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   els.levels.innerHTML = '';
@@ -475,6 +515,8 @@ $('btnRestart').addEventListener('click', () => { startLevel(levelIndex, 'play')
 $('btnMenu').addEventListener('click', () => { setScreen('title'); audio.play('click'); });
 $('btnSound').addEventListener('click', () => { audio.init(); save.muted = !save.muted; writeSave(); updateSoundBtn(); if (audio.kit) audio.kit.setMuted(save.muted); audio.play('click'); });
 $('btnPlay').addEventListener('click', () => { audio.init(); startLevel(levelIndex, 'play'); audio.play('go'); });
+$('btnAR').addEventListener('click', () => { startAR(); });
+$('btnExitAR').addEventListener('click', () => { stopAR(); levelBallFace(); audio.play('click'); });
 $('btnNext').addEventListener('click', () => { startLevel(Math.min(levelIndex + 1, LEVELS.length - 1), 'play'); audio.play('go'); });
 $('btnAgain').addEventListener('click', () => { startLevel(levelIndex, 'play'); audio.play('go'); });
 $('btnLevels').addEventListener('click', () => { setScreen('title'); audio.play('click'); });
@@ -520,10 +562,71 @@ function drawBackdrop() {
   }
 }
 
+// ---------- AR start / stop / hints ----------
+async function startAR() {
+  if (arStarting) return;
+  arStarting = true;
+  audio.init();
+  const btn = $('btnAR'), err = $('arErr');
+  err.hidden = true; btn.disabled = true; btn.lastChild.textContent = t('arStarting');
+  try {
+    if (!ar) ar = new ArSession({ fov: params.has('fov') ? +params.get('fov') : 66 });
+    await ar.start();
+    mode = 'ar'; gAR = null; readyHold = 0;
+    document.body.classList.add('is-ar');
+    resize();
+    startLevel(levelIndex, 'play');
+    audio.play('click');
+  } catch (e) {
+    const framed = (() => { try { return window.self !== window.top; } catch { return true; } })();
+    const code = e && e.code;
+    const key = framed || code === 'insecure' ? 'errHere' : code === 'denied' ? 'errDenied' : code === 'nocamera' ? 'errNoCam' : 'errFailed';
+    err.innerHTML = '';
+    const p = document.createElement('span'); p.textContent = t(key); err.appendChild(p);
+    if (key === 'errHere') { const a = document.createElement('a'); a.href = SITE; a.target = '_blank'; a.rel = 'noopener'; a.textContent = SITE; err.append(' ', a); }
+    err.hidden = false;
+    console.warn('AR', e);
+  } finally {
+    arStarting = false; btn.disabled = false; btn.lastChild.textContent = t('arPlay');
+  }
+}
+function stopAR() {
+  if (ar) ar.stop();
+  mode = 'touch';
+  document.body.classList.remove('is-ar');
+  els.arHint.hidden = true;
+  resize();
+  updateModeUI();
+}
+function updateModeUI() {
+  const isAR = mode === 'ar';
+  for (const id of ['btnSpinL', 'btnSpinR', 'btnFlat']) $(id).hidden = isAR;
+  $('btnExitAR').hidden = !isAR;
+  els.bg.hidden = isAR;
+  if (!isAR || screen !== 'play') els.arHint.hidden = true;
+}
+let arDbgT = 0;
+function updateArHint(tracked) {
+  const h = els.arHint;
+  let title = '', sub = '';
+  if (screen === 'play') {
+    if (!tracked) { title = game.phase === 'ready' ? t('arFind') : t('arLost'); sub = t('arFindSub'); }
+    else if (game.phase === 'ready') { title = t('arTurnUp'); sub = ar.sensorOn || ar.upOverride ? t('arTurnSub') : t('arNoSensor'); }
+  }
+  h.hidden = !title;
+  if (title && $('arHintTitle').textContent !== title) { $('arHintTitle').textContent = title; $('arHintSub').textContent = sub; }
+  if (params.has('debug') && (clock - arDbgT > 0.25)) {
+    arDbgT = clock;
+    const p = ar.pose;
+    $('arDebug').hidden = false;
+    $('arDebug').textContent = `fps ${ar.fps.toFixed(0)} · cv ${ar.cvMs.toFixed(0)} ms · markers ${ar.markers} · ${ar.active || 'none'}${p ? ` · z ${p.t[2].toFixed(0)} mm` : ''} · tilt sensor ${ar.sensorOn ? 'on' : 'off'}${gAR ? ` · g ${gAR.map((x) => x.toFixed(2)).join(' ')}` : ''}`;
+  }
+}
+
 // ---------- render loop ----------
 let vpW = 0, vpH = 0;
 function resize() {
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(mode === 'ar' ? 1.5 : 2, window.devicePixelRatio || 1);
   vpW = Math.max(1, Math.round(els.gl.clientWidth * dpr)); vpH = Math.max(1, Math.round(els.gl.clientHeight * dpr));
   els.gl.width = vpW; els.gl.height = vpH;
   drawBackdrop();
@@ -563,20 +666,37 @@ function frame(now) {
     const s = 220 * real;
     tiltBy((keys.has('ArrowRight') ? s : 0) - (keys.has('ArrowLeft') ? s : 0), (keys.has('ArrowDown') ? s : 0) - (keys.has('ArrowUp') ? s : 0));
   }
-  if (screen !== 'play') { idleSpin = real * 0.25; Q = q.norm(q.mul(q.axis([0, 1, 0], idleSpin), Q)); }
+  if (screen !== 'play' && mode === 'touch') { idleSpin = real * 0.25; Q = q.norm(q.mul(q.axis([0, 1, 0], idleSpin), Q)); }
+
+  // AR: real-world gravity in cube coordinates; the game waits while the cube is out of sight
+  let arTracked = false;
+  if (mode === 'ar') {
+    arTracked = ar.tracking;
+    if (arTracked) {
+      const Rm = ar.pose.R, up = ar.upInCamera(), gc = [-up[0], -up[1], -up[2]];
+      const g = v3.norm([Rm[0] * gc[0] + Rm[3] * gc[1] + Rm[6] * gc[2], Rm[1] * gc[0] + Rm[4] * gc[1] + Rm[7] * gc[2], Rm[2] * gc[0] + Rm[5] * gc[1] + Rm[8] * gc[2]]);
+      gAR = gAR ? v3.norm(v3.add(gAR, v3.scale(v3.sub(g, gAR), 1 - Math.exp(-real / 0.06)))) : g;
+      if (screen === 'play' && game.phase === 'ready') {
+        const flat = -v3.dot(gAR, FACES[level.start.f].n);
+        readyHold = flat > 0.965 ? readyHold + real : 0;
+        if (readyHold > 0.35) { game.begin(); audio.play('go'); }
+      }
+    }
+    updateArHint(arTracked);
+  }
 
   // physics (in steps of at most 1/60 s)
-  let remaining = screen === 'play' ? dt : 0;
+  let remaining = screen === 'play' && (mode === 'touch' || arTracked) ? dt : 0;
   while (remaining > 1e-6) {
     const h = Math.min(remaining, 1 / 60); remaining -= h;
-    if (demo && game.phase !== 'done') {
+    if (demo && game.phase !== 'done' && mode === 'touch') {
       game.begin(); els.hint.hidden = true;
       const gTarget = autopilot(h);
       const gw = q.rot(Q, gTarget);
       const turn = q.fromTo(gw, [0, -1, 0]);
       Q = q.norm(q.mul(q.slerp(q.ident(), turn, Math.min(1, h * 9)), Q));
     }
-    const gL = q.rot(q.conj(Q), [0, -1, 0]);
+    const gL = mode === 'ar' ? gAR : q.rot(q.conj(Q), [0, -1, 0]);
     const prevF = game.ball.f;
     const before = facePoint(game.ball.f, game.ball.u, game.ball.v, BALL_R);
     const ev = game.update(h, gL);
@@ -605,11 +725,47 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+// Projection and cube matrix that put the game cube exactly on the printed cube (OpenCV pose, mm).
+function arCamera() {
+  const K = ar.K;
+  if (!K || !K.vw) return null;
+  const W = vpW, Hh = vpH, vw = K.vw, vh = K.vh;
+  const sFill = Math.max(W / vw, Hh / vh), sFit = Math.min(W / vw, Hh / vh);
+  const s = sFill / sFit > 1.25 ? sFit : sFill;   // fill the screen unless that crops too much of the image
+  const ox = (vw - W / s) / 2, oy = (vh - Hh / s) / 2;
+  const fx = K.fx * s, fy = K.fy * s, cx = (K.cx - ox) * s, cy = (K.cy - oy) * s;
+  const n = 5, f = 20000;
+  const vp = new Float32Array([2 * fx / W, 0, 0, 0, 0, 2 * fy / Hh, 0, 0, 1 - 2 * cx / W, 2 * cy / Hh - 1, -(f + n) / (f - n), -1, 0, 0, -2 * f * n / (f - n), 0]);
+  const bg = { source: ar.frame, version: ar.frameVersion, sx: vw * s / W, sy: vh * s / Hh };
+  const up = ar.upInCamera(), upGL = [up[0], -up[1], -up[2]];
+  const sun = v3.norm(v3.add(v3.add(v3.scale(upGL, 0.82), [-0.45, 0, 0]), [0, 0, 0.38]));
+  let cube = null;
+  if (ar.tracking) {
+    const Rm = ar.pose.R, tm = ar.pose.t, unit = ar.edge / N * AR_SCALE;
+    const off = ar.pose.target === 'card' ? [0, ar.edge / 2 * AR_SCALE, 0] : [0, 0, 0];
+    const tt = [Rm[0] * off[0] + Rm[1] * off[1] + Rm[2] * off[2] + tm[0], Rm[3] * off[0] + Rm[4] * off[1] + Rm[5] * off[2] + tm[1], Rm[6] * off[0] + Rm[7] * off[1] + Rm[8] * off[2] + tm[2]];
+    cube = new Float32Array([
+      Rm[0] * unit, -Rm[3] * unit, -Rm[6] * unit, 0,
+      Rm[1] * unit, -Rm[4] * unit, -Rm[7] * unit, 0,
+      Rm[2] * unit, -Rm[5] * unit, -Rm[8] * unit, 0,
+      tt[0], -tt[1], -tt[2], 1]);
+  }
+  return { vp, eye: [0, 0, 0], sun, bg, cube, K, s, ox, oy };
+}
+
 function draw() {
-  const { eye, vp } = camera();
-  const sun = v3.norm([-0.45, 0.82, 0.38]);
-  R.begin(vpW, vpH, vp, eye, sun, clock);
-  const cube = m4.fromQ(Q);
+  let view;
+  if (mode === 'ar') {
+    view = arCamera();
+    if (!view) { R.begin(vpW, vpH, m4.ident(), [0, 0, 1], [0, 1, 0], clock, { source: null }); return; }
+  } else {
+    const c = camera();
+    view = { vp: c.vp, eye: c.eye, sun: v3.norm([-0.45, 0.82, 0.38]), bg: null, cube: m4.fromQ(Q) };
+  }
+  arView = view;
+  const { eye, vp, sun, cube } = view;
+  R.begin(vpW, vpH, vp, eye, sun, clock, view.bg);
+  if (!cube) return;   // AR: cube not in view, show only the camera image
   R.draw(gpu.world, cube);
   world.buildings.forEach((e, i) => {
     const done = game.visited.has(e.b.letter);
@@ -654,7 +810,8 @@ function draw() {
     R.draw(sharedMeshes.blob, m4.mul(cube, m4.basis(F.u, F.n, Z, v3.add(sp, visOff))), { depthWrite: false, alpha: scale });
   }
   // ghost ball when its face points away from the camera
-  const nW = q.rot(Q, F.n), pW = q.rot(Q, pos), toCam = v3.norm(v3.sub(eye, pW));
+  const nW = v3.norm([cube[0] * F.n[0] + cube[4] * F.n[1] + cube[8] * F.n[2], cube[1] * F.n[0] + cube[5] * F.n[1] + cube[9] * F.n[2], cube[2] * F.n[0] + cube[6] * F.n[1] + cube[10] * F.n[2]]);
+  const pW = m4.apply(cube, pos), toCam = v3.norm(v3.sub(eye, pW));
   if (v3.dot(nW, toCam) < 0.08 && game.phase !== 'sink') R.draw(sharedMeshes.ball, ballM, { alpha: 0.4, depthTest: false, depthWrite: false, tint: [0.06, 0.55, 0.55, 0.35] });
 }
 
@@ -677,5 +834,6 @@ window.__gk = {
   get game() { return game; }, get screen() { return screen; }, get Q() { return Q; },
   startLevel, setDemo(v) { demo = v; }, setTimeScale(v) { timeScale = v; },
   tilt: tiltBy, SoundKit, get audio() { return audio; },
+  get ar() { return ar; }, get mode() { return mode; }, get gAR() { return gAR; }, get arView() { return arView; }, startAR, stopAR,
 };
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});

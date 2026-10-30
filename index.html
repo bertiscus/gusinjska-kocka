@@ -172,12 +172,37 @@ button { font: inherit; color: inherit; }
 
 .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-left, 0px)); text-align: center; font-size: 1rem; }
 
+/* ---------- AR ---------- */
+.play-row { display: grid; gap: 8px; }
+.ar-btn {
+  height: 48px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--stele); border: 1px solid var(--line); font-weight: 600; font-size: 0.98rem; color: var(--ink);
+}
+.ar-btn svg { width: 22px; height: 22px; fill: none; stroke: var(--accent); stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }
+.ar-btn:disabled { opacity: 0.6; cursor: progress; }
+.ar-err { margin: -4px 0 0; font-size: 0.84rem; line-height: 1.45; color: #8a2d1c; background: #fbebe6; border-radius: 10px; padding: 9px 12px; overflow-wrap: anywhere; }
+.ar-err a { color: var(--accent); font-weight: 600; }
+.ar-print { justify-self: start; margin-top: -6px; font-size: 0.8rem; color: var(--accent); }
+.ar-hint {
+  position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); transform: translateX(-50%);
+  width: min(340px, calc(100% - 32px)); display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center;
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; pointer-events: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+.ar-hint p { margin: 0; font-size: 0.9rem; font-weight: 600; line-height: 1.35; }
+.ar-hint p + p { font-weight: 400; font-size: 0.82rem; color: var(--ink-2); margin-top: 3px; }
+.ar-hint-cube { width: 44px; height: 44px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; animation: ar-bob 2.4s ease-in-out infinite; }
+@keyframes ar-bob { 50% { transform: rotate(-12deg) scale(0.94); } }
+.ar-debug { position: absolute; left: 8px; right: 8px; top: calc(env(safe-area-inset-top, 0px) + 112px); font: 11px/1.3 ui-monospace, monospace; color: #fff; background: rgba(0,0,0,0.55); padding: 4px 6px; border-radius: 6px; pointer-events: none; }
+body.is-ar { background: #000; }
+body.is-ar .lvl > span:last-child { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px 10px; text-shadow: none; }
+
 @media (min-width: 760px) and (min-height: 560px) {
   .screen { justify-content: center; align-items: flex-end; }
   .card { margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .toast.is-in, .finger::before, .stars .on { animation: none; }
+  .toast.is-in, .finger::before, .stars .on, .ar-hint-cube { animation: none; }
 }
 </style>
 
@@ -202,6 +227,12 @@ button { font: inherit; color: inherit; }
     <div class="toast-text" id="toastText"></div>
   </div>
 
+  <div id="arHint" class="ar-hint" role="status" aria-live="polite" hidden>
+    <svg class="ar-hint-cube" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6 39 14v20L24 42 9 34V14z"/><path d="M9 14l15 8 15-8M24 22v20"/></svg>
+    <div><p id="arHintTitle"></p><p id="arHintSub"></p></div>
+  </div>
+  <div id="arDebug" class="ar-debug" hidden></div>
+
   <div id="hint" class="hint" hidden>
     <div class="finger" aria-hidden="true"></div>
     <div><p id="hintText"></p><p id="hintGoal"></p></div>
@@ -212,6 +243,7 @@ button { font: inherit; color: inherit; }
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7.2C5.2 8.1 3 9.9 3 12c0 2.8 4 5 9 5s9-2.2 9-5c0-1.8-1.6-3.3-4-4.2"/><path d="M11.5 4.5 8.4 7.2l3 2.6"/></svg>
     </button>
     <button id="btnFlat" class="pill" type="button">Poravnaj</button>
+    <button id="btnExitAR" class="pill" type="button" hidden>Igraj prstom</button>
     <button id="btnSpinR" class="ibtn" type="button">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 7.2C18.8 8.1 21 9.9 21 12c0 2.8-4 5-9 5s-9-2.2-9-5c0-1.8 1.6-3.3 4-4.2"/><path d="M12.5 4.5l3.1 2.7-3 2.6"/></svg>
     </button>
@@ -239,7 +271,12 @@ button { font: inherit; color: inherit; }
         <p class="tagline" id="tagline"></p>
       </div>
       <div class="levels" id="levels"></div>
-      <button id="btnPlay" class="cta" type="button">Igraj</button>
+      <div class="play-row">
+        <button id="btnPlay" class="cta" type="button">Igraj</button>
+        <button id="btnAR" class="ar-btn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 20 7.2v9.6L12 21.2 4 16.8V7.2z"/><path d="M4 7.2 12 11.6l8-4.4M12 11.6v9.6"/><path d="M1.8 5V2.2h2.8M22.2 5V2.2h-2.8M1.8 19v2.8h2.8M22.2 19v2.8h-2.8"/></svg><span>Igraj s AR kockom</span></button>
+      </div>
+      <p class="ar-err" id="arErr" role="alert" hidden></p>
+      <a class="ar-print" id="arPrint" href="https://bertiscus.github.io/gusinjska-kocka/ar/AR_cube_paper_test.pdf" target="_blank" rel="noopener">PDF</a>
       <p class="note" id="note"></p>
       <p class="keys" id="keys"></p>
     </div>
@@ -271,7 +308,9 @@ button { font: inherit; color: inherit; }
 </div>
 
 <script type="module">
-// ---- core.js ----
+const __mods = {};
+// ---- src/core.js ----
+__mods["src/core.js"] = (() => {
 // ===== Gusinjska kocka — game core (no rendering, no DOM) =====
 // The cube has six faces, each a 9×9 grid of tiles (1 tile = 1 unit).
 // The ball is "magnetic": it always stays on the surface and is pushed by
@@ -909,7 +948,10 @@ function makeAutopilot(game, opts = {}) {
   };
 }
 
-// ---- render.js ----
+return { N, H, BALL_R, TREE_R, PHYS, FACES, FACE_INDEX, v3, facePoint, tileU, tileV, tileI, tileJ, faceWithNormal, fold, BUILDINGS, isBuildingChar, isDoorChar, isSolidChar, isPassableChar, LEVELS, parseLevel, neighbours, bfs, stepBall, Game, PARS, stars, makeAutopilot };
+})();
+// ---- src/render.js ----
+__mods["src/render.js"] = (() => {
 // ===== Gusinjska kocka — tiny WebGL renderer (no libraries, works offline) =====
 
 // ---------- math ----------
@@ -1185,10 +1227,53 @@ class Renderer {
     return t;
   }
   free(mesh) { if (!mesh) return; const gl = this.gl; for (const k of ['pos', 'nor', 'col', 'kind', 'uv', 'idx']) if (mesh[k]) gl.deleteBuffer(mesh[k]); }
-  begin(w, h, vp, cam, sun, time) {
+  // Camera image behind the scene (AR). sx, sy: size of the image quad in clip space (1 = full screen).
+  _initBg() {
+    const gl = this.gl;
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+    const p = gl.createProgram();
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, 'attribute vec2 aP; uniform vec2 uS; varying vec2 vT; void main(){ vT = vec2(aP.x*0.5+0.5, 0.5-aP.y*0.5); gl_Position = vec4(aP*uS, 0.0, 1.0); }'));
+    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, 'precision mediump float; varying vec2 vT; uniform sampler2D uTex; void main(){ gl_FragColor = vec4(texture2D(uTex, vT).rgb, 1.0); }'));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    this.bg = { prog: p, aP: gl.getAttribLocation(p, 'aP'), uS: gl.getUniformLocation(p, 'uS'), uTex: gl.getUniformLocation(p, 'uTex'),
+      buf: gl.createBuffer(), tex: gl.createTexture(), version: -1 };
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bg.buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    gl.bindTexture(gl.TEXTURE_2D, this.bg.tex);
+    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+  }
+  _drawBg(bg) {
+    const gl = this.gl;
+    if (!this.bg) this._initBg();
+    const B = this.bg;
+    gl.useProgram(B.prog);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, B.tex);
+    if (bg.version !== B.version) {
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, bg.source);
+      B.version = bg.version;
+    }
+    for (let i = 0; i < 8; i++) gl.disableVertexAttribArray(i);
+    gl.bindBuffer(gl.ARRAY_BUFFER, B.buf);
+    gl.enableVertexAttribArray(B.aP);
+    gl.vertexAttribPointer(B.aP, 2, gl.FLOAT, false, 0, 0);
+    gl.uniform2f(B.uS, bg.sx, bg.sy);
+    gl.uniform1i(B.uTex, 0);
+    gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.BLEND);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.disableVertexAttribArray(B.aP);
+    gl.enable(gl.BLEND); gl.depthMask(true); gl.enable(gl.DEPTH_TEST);
+    gl.useProgram(this.prog);
+  }
+  begin(w, h, vp, cam, sun, time, bg = null) {
     const gl = this.gl;
     gl.viewport(0, 0, w, h);
+    gl.clearColor(0, 0, 0, bg ? 1 : 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    if (bg && bg.source && bg.source.width) this._drawBg(bg);
+    gl.useProgram(this.prog);
     gl.uniformMatrix4fv(this.u.uVP, false, vp);
     gl.uniform3fv(this.u.uCam, cam);
     gl.uniform3fv(this.u.uSun, sun);
@@ -1218,7 +1303,10 @@ class Renderer {
   }
 }
 
-// ---- sound.js ----
+return { q, m4, hex, jitter, shade, mulberry, MeshBuilder, Renderer };
+})();
+// ---- src/sound.js ----
+__mods["src/sound.js"] = (() => {
 // ===== Gusinjska kocka — sound, synthesised in the browser (no audio files) =====
 // All musical notes come from one D-major pentatonic scale, so chimes, the fanfare and
 // the star dings always sound good together, in any order.
@@ -1393,11 +1481,1029 @@ class SoundKit {
   }
 }
 
-// ---- main.js ----
+return { SCALE, noteHz, SoundKit };
+})();
+// ---- src/ar/detector.js ----
+__mods["src/ar/detector.js"] = (() => {
+// ArUco marker detector for the AR cube.
+// Contour pipeline adapted from js-aruco / js-aruco2 (MIT, (c) 2011 Juan Mellado, (c) 2020 Damiano Falcioni):
+// adaptive threshold -> Suzuki border following -> polygon approximation -> convex quads.
+// Changes for this project: typed arrays, cell-centre sampling instead of a warped patch, a closed set of
+// codes with a strict Hamming limit, and sub-pixel corner refinement by fitting lines to the marker edges.
+
+const NB = [[1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1]];
+
+function popcount32(x) {
+  x -= (x >>> 1) & 0x55555555;
+  x = (x & 0x33333333) + ((x >>> 2) & 0x33333333);
+  return (((x + (x >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24;
+}
+
+// 6x6 bits (row-major, 1 = white) -> [hi, lo] 32-bit words
+function packBits(bits) {
+  let hi = 0, lo = 0;
+  for (let i = 0; i < 36; i++) {
+    if (!bits[i]) continue;
+    if (i < 4) hi |= 1 << (3 - i); else lo |= 1 << (35 - i);
+  }
+  return [hi >>> 0, lo >>> 0];
+}
+
+function rotateBits(bits) { // rotate 6x6 grid 90 deg (same convention as js-aruco)
+  const out = new Array(36);
+  for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) out[i * 6 + j] = bits[(6 - j - 1) * 6 + i];
+  return out;
+}
+
+class MarkerDetector {
+  // codes: [{id, cells}] where cells is the 8x8 (1 = black) grid from layout.json
+  constructor(codes, opts = {}) {
+    this.maxHamming = opts.maxHamming ?? 3;
+    this.minSide = opts.minSide ?? 12;
+    this.threshC = opts.threshC ?? 7;
+    this.dict = codes.map(c => {
+      const bits = [];
+      for (let i = 1; i < 7; i++) for (let j = 1; j < 7; j++) bits.push(c.cells[i][j] ? 0 : 1);
+      return { id: c.id, packed: packBits(bits) };
+    });
+    this.w = 0; this.h = 0;
+  }
+
+  _alloc(w, h) {
+    if (w === this.w && h === this.h) return;
+    this.w = w; this.h = h;
+    this.gray = new Uint8Array(w * h);
+    this.blur = new Uint8Array(w * h);
+    this.tmp = new Uint16Array(w * h);
+    this.bin = new Int32Array((w + 2) * (h + 2));
+  }
+
+  // rgba: Uint8ClampedArray (w*h*4). Returns markers [{id, corners:[{x,y}x4], rot, hamming}]
+  detect(rgba, w, h, opts = {}) {
+    this._alloc(w, h);
+    const g = this.gray;
+    for (let i = 0, j = 0, n = w * h; j < n; i += 4, j++) g[j] = (rgba[i] * 77 + rgba[i + 1] * 150 + rgba[i + 2] * 29) >> 8;
+    return this.detectGray(g, w, h, opts);
+  }
+
+  detectGray(g, w, h, opts = {}) {
+    this._alloc(w, h);
+    if (g !== this.gray) this.gray.set(g);
+    const radius = opts.radius ?? 2;
+    this.stats = { candidates: 0, radius };
+    this._boxBlur(this.gray, this.blur, radius);
+    const contours = this._findContours(this.gray, this.blur, this.threshC);
+    const quads = [];
+    const minLen = 4 * this.minSide;
+    for (const c of contours) {
+      if (c.length < minLen) continue;
+      const poly = approxPolyDP(c, c.length * 0.04);
+      if (poly.length !== 4 || !isConvex(poly)) continue;
+      if (minEdge(poly) < this.minSide) continue;
+      // clockwise in image coordinates (y down)
+      const dx1 = poly[1].x - poly[0].x, dy1 = poly[1].y - poly[0].y, dx2 = poly[2].x - poly[0].x, dy2 = poly[2].y - poly[0].y;
+      if (dx1 * dy2 - dy1 * dx2 < 0) { const t = poly[1]; poly[1] = poly[3]; poly[3] = t; }
+      quads.push(poly);
+    }
+    this.stats.candidates = quads.length;
+    const markers = [];
+    for (const q of quads) {
+      const m = this._decode(q);
+      if (m) markers.push(m);
+    }
+    // keep one detection per id (largest)
+    const best = new Map();
+    for (const m of markers) {
+      m.area = polyArea(m.corners);
+      const o = best.get(m.id);
+      if (!o || m.area > o.area) best.set(m.id, m);
+    }
+    const out = [...best.values()];
+    if (opts.refine !== false) for (const m of out) this._refine(m);
+    return out;
+  }
+
+  // separable box blur, radius r (window 2r+1)
+  _boxBlur(src, dst, r) {
+    const w = this.w, h = this.h, tmp = this.tmp, win = 2 * r + 1;
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      let s = src[row] * (r + 1);
+      for (let x = 1; x <= r; x++) s += src[row + Math.min(x, w - 1)];
+      for (let x = 0; x < w; x++) {
+        tmp[row + x] = s;
+        s += src[row + Math.min(x + r + 1, w - 1)] - src[row + Math.max(x - r, 0)];
+      }
+    }
+    const div = win * win;
+    for (let x = 0; x < w; x++) {
+      let s = tmp[x] * (r + 1);
+      for (let y = 1; y <= r; y++) s += tmp[Math.min(y, h - 1) * w + x];
+      for (let y = 0; y < h; y++) {
+        dst[y * w + x] = (s / div) | 0;
+        s += tmp[Math.min(y + r + 1, h - 1) * w + x] - tmp[Math.max(y - r, 0) * w + x];
+      }
+    }
+  }
+
+  // threshold (pixel darker than local mean by > c) into a 1-px-padded image, then Suzuki border following
+  _findContours(gray, blur, c) {
+    const w = this.w, h = this.h, W = w + 2, src = this.bin;
+    src.fill(0);
+    for (let y = 0; y < h; y++) {
+      let p = (y + 1) * W + 1, q = y * w;
+      for (let x = 0; x < w; x++, p++, q++) src[p] = (gray[q] + c <= blur[q]) ? 1 : 0;
+    }
+    const deltas = new Int32Array(16);
+    for (let i = 0; i < 8; i++) deltas[i] = deltas[i + 8] = NB[i][0] + NB[i][1] * W;
+    const contours = [];
+    let nbd = 1;
+    for (let i = 0; i < h; i++) {
+      let pos = (i + 1) * W + 1;
+      for (let j = 0; j < w; j++, pos++) {
+        const pix = src[pos];
+        if (pix === 0) continue;
+        let outer = false, hole = false;
+        if (pix === 1 && src[pos - 1] === 0) outer = true;
+        else if (pix >= 1 && src[pos + 1] === 0) hole = true;
+        if (outer || hole) {
+          nbd++;
+          contours.push(borderFollowing(src, pos, nbd, j, i, hole, deltas));
+        }
+      }
+    }
+    return contours;
+  }
+
+  // sample cell centres through the quad homography, classify, match against the code set
+  _decode(q) {
+    const H = squareToQuad(q);
+    const g = this.gray, w = this.w, h = this.h;
+    const vals = new Float32Array(64);
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        let s = 0, n = 0;
+        for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) {
+          const u = (j + 0.3 + 0.2 * b) / 8, v = (i + 0.3 + 0.2 * a) / 8;
+          const d = H[6] * u + H[7] * v + 1;
+          const x = (H[0] * u + H[1] * v + H[2]) / d, y = (H[3] * u + H[4] * v + H[5]) / d;
+          if (x < 0 || y < 0 || x > w - 1.001 || y > h - 1.001) return null;
+          s += bilinear(g, w, x, y); n++;
+        }
+        vals[i * 8 + j] = s / n;
+      }
+    }
+    // threshold: Otsu on the 64 cell means
+    const t = otsu64(vals);
+    let blackMean = 0, whiteMean = 0, nb = 0, nw = 0;
+    for (let k = 0; k < 64; k++) { if (vals[k] <= t) { blackMean += vals[k]; nb++; } else { whiteMean += vals[k]; nw++; } }
+    if (!nw || !nb) return null;
+    blackMean /= nb; whiteMean /= nw;
+    if (whiteMean - blackMean < 25) return null;
+    for (let k = 0; k < 8; k++) {
+      if (vals[k] > t || vals[56 + k] > t || vals[k * 8] > t || vals[k * 8 + 7] > t) return null; // border must be black
+    }
+    let bits = [];
+    for (let i = 1; i < 7; i++) for (let j = 1; j < 7; j++) bits.push(vals[i * 8 + j] > t ? 1 : 0);
+    let best = null;
+    for (let rot = 0; rot < 4; rot++) {
+      const [hi, lo] = packBits(bits);
+      for (const d of this.dict) {
+        const dist = popcount32((hi ^ d.packed[0]) >>> 0) + popcount32((lo ^ d.packed[1]) >>> 0);
+        if (dist <= this.maxHamming && (!best || dist < best.hamming)) best = { id: d.id, rot, hamming: dist };
+      }
+      bits = rotateBits(bits);
+    }
+    if (!best) return null;
+    const r = (4 - best.rot) % 4;
+    const corners = [0, 1, 2, 3].map(k => ({ x: q[(r + k) % 4].x, y: q[(r + k) % 4].y }));
+    return { id: best.id, corners, hamming: best.hamming, contrast: whiteMean - blackMean };
+  }
+
+  // fit a line to each marker edge (strongest dark->bright step along the outward normal), intersect neighbours
+  _refine(m) {
+    const g = this.gray, w = this.w, h = this.h, c = m.corners;
+    const cx = (c[0].x + c[1].x + c[2].x + c[3].x) / 4, cy = (c[0].y + c[1].y + c[2].y + c[3].y) / 4;
+    const lines = [];
+    for (let k = 0; k < 4; k++) {
+      const p0 = c[k], p1 = c[(k + 1) % 4];
+      const L = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+      const dx = (p1.x - p0.x) / L, dy = (p1.y - p0.y) / L;
+      let nx = dy, ny = -dx;
+      if (((p0.x + p1.x) / 2 - cx) * nx + ((p0.y + p1.y) / 2 - cy) * ny < 0) { nx = -nx; ny = -ny; }
+      const R = Math.max(2, Math.min(5, L * 0.06)), step = 0.5, ns = Math.round(2 * R / step) + 1;
+      const N = Math.max(6, Math.min(32, Math.round(L / 2)));
+      const pts = [];
+      const prof = new Float32Array(ns);
+      for (let s = 0; s < N; s++) {
+        const t = 0.12 + 0.76 * (s + 0.5) / N;
+        const px = p0.x + (p1.x - p0.x) * t, py = p0.y + (p1.y - p0.y) * t;
+        let ok = true;
+        for (let k2 = 0; k2 < ns; k2++) {
+          const o = -R + k2 * step, x = px + nx * o, y = py + ny * o;
+          if (x < 0 || y < 0 || x > w - 1.001 || y > h - 1.001) { ok = false; break; }
+          prof[k2] = bilinear(g, w, x, y);
+        }
+        if (!ok) continue;
+        let bi = -1, bd = 0;
+        for (let k2 = 1; k2 < ns - 1; k2++) {
+          const d = prof[k2 + 1] - prof[k2 - 1];
+          if (d > bd) { bd = d; bi = k2; }
+        }
+        if (bi < 2 || bi > ns - 3 || bd < 12) continue;
+        const dm = prof[bi] - prof[bi - 2], d0 = bd, dp = prof[bi + 2] - prof[bi];
+        const den = dm - 2 * d0 + dp;
+        const off = den < 0 ? 0.5 * (dm - dp) / den : 0;
+        const o = -R + (bi + Math.max(-0.5, Math.min(0.5, off))) * step;
+        pts.push([px + nx * o, py + ny * o]);
+      }
+      if (pts.length < 4) return;     // keep the integer corners
+      let line = fitLine(pts);
+      const res = pts.filter(p => Math.abs((p[0] - line.x) * line.nx + (p[1] - line.y) * line.ny) < 0.8);
+      if (res.length >= 4 && res.length < pts.length) line = fitLine(res);
+      lines.push(line);
+    }
+    const out = [];
+    for (let k = 0; k < 4; k++) {
+      const a = lines[(k + 3) % 4], b = lines[k];
+      const p = intersect(a, b);
+      if (!p) return;
+      const d = Math.hypot(p.x - c[k].x, p.y - c[k].y);
+      if (d > Math.max(2.5, 0.08 * Math.sqrt(m.area))) return;
+      out.push(p);
+    }
+    m.corners = out; m.refined = true;
+  }
+}
+
+function bilinear(g, w, x, y) {
+  const x0 = x | 0, y0 = y | 0, fx = x - x0, fy = y - y0, p = y0 * w + x0;
+  return (g[p] * (1 - fx) + g[p + 1] * fx) * (1 - fy) + (g[p + w] * (1 - fx) + g[p + w + 1] * fx) * fy;
+}
+
+function fitLine(pts) {
+  let mx = 0, my = 0;
+  for (const p of pts) { mx += p[0]; my += p[1]; }
+  mx /= pts.length; my /= pts.length;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (const p of pts) { const a = p[0] - mx, b = p[1] - my; sxx += a * a; sxy += a * b; syy += b * b; }
+  const th = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+  const dx = Math.cos(th), dy = Math.sin(th);
+  return { x: mx, y: my, dx, dy, nx: -dy, ny: dx };
+}
+
+function intersect(a, b) {
+  const den = a.dx * b.dy - a.dy * b.dx;
+  if (Math.abs(den) < 1e-6) return null;
+  const t = ((b.x - a.x) * b.dy - (b.y - a.y) * b.dx) / den;
+  return { x: a.x + a.dx * t, y: a.y + a.dy * t };
+}
+
+function otsu64(vals) {
+  const v = Array.from(vals).sort((a, b) => a - b);
+  let best = v[31], bestScore = -1, total = 0;
+  for (const x of v) total += x;
+  let sumB = 0;
+  for (let i = 0; i < 63; i++) {
+    sumB += v[i];
+    const wB = i + 1, wF = 64 - wB;
+    const mB = sumB / wB, mF = (total - sumB) / wF;
+    const score = wB * wF * (mB - mF) * (mB - mF);
+    if (score > bestScore) { bestScore = score; best = (v[i] + v[i + 1]) / 2; }
+  }
+  return best;
+}
+
+// homography mapping the unit square (u,v) in [0,1]^2 to quad corners q[0..3] (TL, TR, BR, BL order)
+function squareToQuad(q) {
+  const x0 = q[0].x, y0 = q[0].y, x1 = q[1].x, y1 = q[1].y, x2 = q[2].x, y2 = q[2].y, x3 = q[3].x, y3 = q[3].y;
+  const px = x0 - x1 + x2 - x3, py = y0 - y1 + y2 - y3;
+  if (Math.abs(px) < 1e-9 && Math.abs(py) < 1e-9) {
+    return [x1 - x0, x3 - x0, x0, y1 - y0, y3 - y0, y0, 0, 0];
+  }
+  const dx1 = x1 - x2, dx2 = x3 - x2, dy1 = y1 - y2, dy2 = y3 - y2;
+  const den = dx1 * dy2 - dx2 * dy1;
+  const g = (px * dy2 - dx2 * py) / den, hh = (dx1 * py - px * dy1) / den;
+  return [x1 - x0 + g * x1, x3 - x0 + hh * x3, x0, y1 - y0 + g * y1, y3 - y0 + hh * y3, y0, g, hh];
+}
+
+function borderFollowing(src, pos, nbd, px, py, hole, deltas) {
+  const contour = [];
+  let s, sEnd, pos1, pos3, pos4;
+  s = sEnd = hole ? 0 : 4;
+  do {
+    s = (s - 1) & 7;
+    pos1 = pos + deltas[s];
+    if (src[pos1] !== 0) break;
+  } while (s !== sEnd);
+  if (s === sEnd) {
+    src[pos] = -nbd;
+    contour.push({ x: px, y: py });
+    return contour;
+  }
+  pos3 = pos;
+  let x = px, y = py;
+  for (let guard = 0; guard < 200000; guard++) {
+    sEnd = s;
+    do { pos4 = pos3 + deltas[++s]; } while (src[pos4] === 0);
+    s &= 7;
+    if (((s - 1) >>> 0) < (sEnd >>> 0)) src[pos3] = -nbd;
+    else if (src[pos3] === 1) src[pos3] = nbd;
+    contour.push({ x, y });
+    x += NB[s][0]; y += NB[s][1];
+    if (pos4 === pos && pos3 === pos1) break;
+    pos3 = pos4;
+    s = (s + 4) & 7;
+  }
+  return contour;
+}
+
+function approxPolyDP(contour, epsilon) {
+  const len = contour.length;
+  const sliceR = { s: 0, e: 0 };
+  let k = 0, startPt, maxDist = 0;
+  const eps2 = epsilon * epsilon;
+  const poly = [], stack = [];
+  for (let i = 0; i < 3; i++) {
+    maxDist = 0;
+    k = (k + sliceR.s) % len;
+    startPt = contour[k];
+    if (++k === len) k = 0;
+    for (let j = 1; j < len; j++) {
+      const pt = contour[k];
+      if (++k === len) k = 0;
+      const dx = pt.x - startPt.x, dy = pt.y - startPt.y, d = dx * dx + dy * dy;
+      if (d > maxDist) { maxDist = d; sliceR.s = j; }
+    }
+  }
+  if (maxDist <= eps2) return [{ x: startPt.x, y: startPt.y }];
+  const slice = { s: k, e: (sliceR.s += k) };
+  sliceR.s -= sliceR.s >= len ? len : 0;
+  sliceR.e = slice.s;
+  if (sliceR.e < sliceR.s) sliceR.e += len;
+  stack.push({ s: sliceR.s, e: sliceR.e });
+  stack.push({ s: slice.s, e: slice.e });
+  while (stack.length) {
+    const sl = stack.pop();
+    const endPt = contour[sl.e % len];
+    k = sl.s % len;
+    const sPt = contour[k];
+    if (++k === len) k = 0;
+    let leEps, rs = 0;
+    if (sl.e <= sl.s + 1) leEps = true;
+    else {
+      let md = 0;
+      const dx = endPt.x - sPt.x, dy = endPt.y - sPt.y;
+      for (let i = sl.s + 1; i < sl.e; i++) {
+        const pt = contour[k];
+        if (++k === len) k = 0;
+        const d = Math.abs((pt.y - sPt.y) * dx - (pt.x - sPt.x) * dy);
+        if (d > md) { md = d; rs = i; }
+      }
+      leEps = md * md <= eps2 * (dx * dx + dy * dy);
+    }
+    if (leEps) poly.push({ x: sPt.x, y: sPt.y });
+    else {
+      stack.push({ s: rs, e: sl.e });
+      stack.push({ s: sl.s, e: rs });
+    }
+    if (poly.length > 8) return poly;   // not a quad; stop early
+  }
+  return poly;
+}
+
+function isConvex(c) {
+  let orientation = 0;
+  const len = c.length;
+  let prev = c[len - 1], cur = c[0];
+  let dx0 = cur.x - prev.x, dy0 = cur.y - prev.y;
+  for (let i = 0, j = 0; i < len; i++) {
+    if (++j === len) j = 0;
+    prev = cur; cur = c[j];
+    const dx = cur.x - prev.x, dy = cur.y - prev.y;
+    const a = dx * dy0, b = dy * dx0;
+    orientation |= b > a ? 1 : (b < a ? 2 : 3);
+    if (orientation === 3) return false;
+    dx0 = dx; dy0 = dy;
+  }
+  return true;
+}
+
+function minEdge(p) {
+  let m = Infinity;
+  for (let i = 0, j = p.length - 1; i < p.length; j = i++) m = Math.min(m, Math.hypot(p[i].x - p[j].x, p[i].y - p[j].y));
+  return m;
+}
+
+function polyArea(p) {
+  let a = 0;
+  for (let i = 0, j = p.length - 1; i < p.length; j = i++) a += p[j].x * p[i].y - p[i].x * p[j].y;
+  return Math.abs(a) / 2;
+}
+
+return { MarkerDetector, squareToQuad };
+})();
+// ---- src/ar/pose.js ----
+__mods["src/ar/pose.js"] = (() => {
+// Pose estimation for a rigid set of markers (cube or flat card).
+// Camera model: pinhole, OpenCV convention (x right, y down, z forward), pixels.
+// Pose: X_cam = R * X_obj + t, R row-major 3x3 (array of 9), t [3].
+
+function mat3mul(a, b) {
+  const o = new Array(9);
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++)
+    o[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
+  return o;
+}
+const transpose = a => [a[0], a[3], a[6], a[1], a[4], a[7], a[2], a[5], a[8]];
+const mulv = (R, v) => [R[0] * v[0] + R[1] * v[1] + R[2] * v[2], R[3] * v[0] + R[4] * v[1] + R[5] * v[2], R[6] * v[0] + R[7] * v[1] + R[8] * v[2]];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const norm = a => Math.hypot(a[0], a[1], a[2]);
+
+function expSO3(w) {   // Rodrigues
+  const th = norm(w);
+  if (th < 1e-12) return [1, -w[2], w[1], w[2], 1, -w[0], -w[1], w[0], 1];
+  const k = [w[0] / th, w[1] / th, w[2] / th], c = Math.cos(th), s = Math.sin(th), v = 1 - c;
+  return [
+    c + k[0] * k[0] * v, k[0] * k[1] * v - k[2] * s, k[0] * k[2] * v + k[1] * s,
+    k[1] * k[0] * v + k[2] * s, c + k[1] * k[1] * v, k[1] * k[2] * v - k[0] * s,
+    k[2] * k[0] * v - k[1] * s, k[2] * k[1] * v + k[0] * s, c + k[2] * k[2] * v];
+}
+
+function orthonormalize(R) {   // nearest rotation via polar iteration
+  let A = R.slice();
+  for (let it = 0; it < 8; it++) {
+    const inv = inverse3(transpose(A));
+    if (!inv) break;
+    A = A.map((x, i) => 0.5 * (x + inv[i]));
+  }
+  return A;
+}
+
+function inverse3(m) {
+  const [a, b, c, d, e, f, g, h, i] = m;
+  const A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g;
+  const det = a * A + b * B + c * C;
+  if (Math.abs(det) < 1e-12) return null;
+  const s = 1 / det;
+  return [A * s, -(b * i - c * h) * s, (b * f - c * e) * s, B * s, (a * i - c * g) * s, -(a * f - c * d) * s, C * s, -(a * h - b * g) * s, (a * e - b * d) * s];
+}
+
+function project(R, t, K, X) {
+  const x = R[0] * X[0] + R[1] * X[1] + R[2] * X[2] + t[0];
+  const y = R[3] * X[0] + R[4] * X[1] + R[5] * X[2] + t[1];
+  const z = R[6] * X[0] + R[7] * X[1] + R[8] * X[2] + t[2];
+  return [K.fx * x / z + K.cx, K.fy * y / z + K.cy, z];
+}
+
+// Levenberg-Marquardt on reprojection error with Huber weights.
+function refinePose(R0, t0, obj, img, K, opts = {}) {
+  let R = R0.slice(), t = t0.slice();
+  const n = obj.length, huber = opts.huber ?? 2.0, iters = opts.iters ?? 12;
+  let lambda = 1e-3;
+  const cost = (R, t) => {
+    let c = 0;
+    for (let i = 0; i < n; i++) {
+      const p = project(R, t, K, obj[i]);
+      if (p[2] <= 1) return Infinity;
+      const e = Math.hypot(p[0] - img[i][0], p[1] - img[i][1]);
+      c += e <= huber ? e * e : 2 * huber * e - huber * huber;
+    }
+    return c;
+  };
+  let c0 = cost(R, t);
+  for (let it = 0; it < iters; it++) {
+    const JTJ = new Float64Array(36), JTr = new Float64Array(6);
+    for (let i = 0; i < n; i++) {
+      const X = obj[i];
+      const rx = R[0] * X[0] + R[1] * X[1] + R[2] * X[2], ry = R[3] * X[0] + R[4] * X[1] + R[5] * X[2], rz = R[6] * X[0] + R[7] * X[1] + R[8] * X[2];
+      const x = rx + t[0], y = ry + t[1], z = rz + t[2];
+      const iz = 1 / z, iz2 = iz * iz;
+      const u = K.fx * x * iz + K.cx, v = K.fy * y * iz + K.cy;
+      const eu = u - img[i][0], ev = v - img[i][1];
+      const e = Math.hypot(eu, ev), w = e <= huber ? 1 : huber / e;
+      // d(u,v)/d(pc)
+      const du = [K.fx * iz, 0, -K.fx * x * iz2], dv = [0, K.fy * iz, -K.fy * y * iz2];
+      // d(pc)/d(omega) = -[R X]_x ; d(pc)/dt = I
+      const S = [0, rz, -ry, -rz, 0, rx, ry, -rx, 0];   // -[r]_x
+      const Ju = [du[0] * S[0] + du[1] * S[3] + du[2] * S[6], du[0] * S[1] + du[1] * S[4] + du[2] * S[7], du[0] * S[2] + du[1] * S[5] + du[2] * S[8], du[0], du[1], du[2]];
+      const Jv = [dv[0] * S[0] + dv[1] * S[3] + dv[2] * S[6], dv[0] * S[1] + dv[1] * S[4] + dv[2] * S[7], dv[0] * S[2] + dv[1] * S[5] + dv[2] * S[8], dv[0], dv[1], dv[2]];
+      for (let a = 0; a < 6; a++) {
+        JTr[a] += w * (Ju[a] * eu + Jv[a] * ev);
+        for (let b = a; b < 6; b++) JTJ[a * 6 + b] += w * (Ju[a] * Ju[b] + Jv[a] * Jv[b]);
+      }
+    }
+    for (let a = 0; a < 6; a++) for (let b = 0; b < a; b++) JTJ[a * 6 + b] = JTJ[b * 6 + a];
+    let improved = false;
+    for (let tries = 0; tries < 6; tries++) {
+      const A = Array.from(JTJ);
+      for (let a = 0; a < 6; a++) A[a * 6 + a] *= 1 + lambda;
+      const d = solve6(A, Array.from(JTr).map(x => -x));
+      if (!d) { lambda *= 10; continue; }
+      const R1 = mat3mul(expSO3([d[0], d[1], d[2]]), R), t1 = [t[0] + d[3], t[1] + d[4], t[2] + d[5]];
+      const c1 = cost(R1, t1);
+      if (c1 < c0) {
+        R = R1; t = t1; lambda = Math.max(lambda / 10, 1e-7);
+        const small = Math.abs(d[0]) + Math.abs(d[1]) + Math.abs(d[2]) < 1e-7 && Math.abs(d[3]) + Math.abs(d[4]) + Math.abs(d[5]) < 1e-5;
+        const rel = (c0 - c1) / (c0 + 1e-12);
+        c0 = c1; improved = !small && rel > 1e-9;
+        break;
+      }
+      lambda *= 10;
+    }
+    if (!improved) break;
+  }
+  R = orthonormalize(R);
+  return { R, t, cost: c0 };
+}
+
+function solve6(A, b) {   // Gaussian elimination with partial pivoting
+  const n = 6;
+  for (let i = 0; i < n; i++) {
+    let p = i;
+    for (let r = i + 1; r < n; r++) if (Math.abs(A[r * n + i]) > Math.abs(A[p * n + i])) p = r;
+    if (Math.abs(A[p * n + i]) < 1e-12) return null;
+    if (p !== i) {
+      for (let c = 0; c < n; c++) { const tmp = A[i * n + c]; A[i * n + c] = A[p * n + c]; A[p * n + c] = tmp; }
+      const tb = b[i]; b[i] = b[p]; b[p] = tb;
+    }
+    for (let r = i + 1; r < n; r++) {
+      const f = A[r * n + i] / A[i * n + i];
+      if (!f) continue;
+      for (let c = i; c < n; c++) A[r * n + c] -= f * A[i * n + c];
+      b[r] -= f * b[i];
+    }
+  }
+  const x = new Array(n);
+  for (let i = n - 1; i >= 0; i--) {
+    let s = b[i];
+    for (let c = i + 1; c < n; c++) s -= A[i * n + c] * x[c];
+    x[i] = s / A[i * n + i];
+  }
+  return x;
+}
+
+// Jacobi eigen-decomposition of a symmetric n x n matrix (flat array). Returns {values, vectors(columns)}.
+function jacobiEigen(Ain, n) {
+  const A = Ain.slice(), V = new Array(n * n).fill(0);
+  for (let i = 0; i < n; i++) V[i * n + i] = 1;
+  for (let sweep = 0; sweep < 60; sweep++) {
+    let off = 0;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) off += A[i * n + j] * A[i * n + j];
+    if (off < 1e-22) break;
+    for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) {
+      const apq = A[p * n + q];
+      if (Math.abs(apq) < 1e-300) continue;
+      const th = (A[q * n + q] - A[p * n + p]) / (2 * apq);
+      const tt = Math.sign(th || 1) / (Math.abs(th) + Math.sqrt(th * th + 1));
+      const c = 1 / Math.sqrt(tt * tt + 1), s = tt * c;
+      for (let k = 0; k < n; k++) {
+        const akp = A[k * n + p], akq = A[k * n + q];
+        A[k * n + p] = c * akp - s * akq; A[k * n + q] = s * akp + c * akq;
+      }
+      for (let k = 0; k < n; k++) {
+        const apk = A[p * n + k], aqk = A[q * n + k];
+        A[p * n + k] = c * apk - s * aqk; A[q * n + k] = s * apk + c * aqk;
+      }
+      for (let k = 0; k < n; k++) {
+        const vkp = V[k * n + p], vkq = V[k * n + q];
+        V[k * n + p] = c * vkp - s * vkq; V[k * n + q] = s * vkp + c * vkq;
+      }
+    }
+  }
+  return { values: Array.from({ length: n }, (_, i) => A[i * n + i]), vectors: V };
+}
+
+// Homography (3x3, row-major) from plane points (u,v) to normalised image points (x,y), normalised DLT.
+function homographyDLT(uv, xy) {
+  const n = uv.length;
+  const norm2 = pts => {
+    let mx = 0, my = 0;
+    for (const p of pts) { mx += p[0]; my += p[1]; }
+    mx /= n; my /= n;
+    let d = 0;
+    for (const p of pts) d += Math.hypot(p[0] - mx, p[1] - my);
+    const s = Math.SQRT2 / (d / n || 1);
+    return { T: [s, 0, -s * mx, 0, s, -s * my, 0, 0, 1], p: pts.map(p => [(p[0] - mx) * s, (p[1] - my) * s]) };
+  };
+  const a = norm2(uv), b = norm2(xy);
+  const M = new Array(81).fill(0);
+  for (let i = 0; i < n; i++) {
+    const [u, v] = a.p[i], [x, y] = b.p[i];
+    const r1 = [-u, -v, -1, 0, 0, 0, x * u, x * v, x], r2 = [0, 0, 0, -u, -v, -1, y * u, y * v, y];
+    for (let p = 0; p < 9; p++) for (let q = 0; q < 9; q++) M[p * 9 + q] += r1[p] * r1[q] + r2[p] * r2[q];
+  }
+  const { values, vectors } = jacobiEigen(M, 9);
+  let k = 0;
+  for (let i = 1; i < 9; i++) if (values[i] < values[k]) k = i;
+  const Hn = Array.from({ length: 9 }, (_, i) => vectors[i * 9 + k]);
+  // H = Tb^-1 * Hn * Ta
+  return mat3mul(mat3mul(inverse3(b.T), Hn), a.T);
+}
+
+// Pose candidates from coplanar points of one face. plane: {U,V,N,O} (object frame), points given in object coords.
+function planarPoseCandidates(obj, img, K, plane) {
+  const uv = obj.map(X => { const d = [X[0] - plane.O[0], X[1] - plane.O[1], X[2] - plane.O[2]]; return [dot(d, plane.U), dot(d, plane.V)]; });
+  const xy = img.map(p => [(p[0] - K.cx) / K.fx, (p[1] - K.cy) / K.fy]);
+  const H = homographyDLT(uv, xy);
+  let h1 = [H[0], H[3], H[6]], h2 = [H[1], H[4], H[7]], h3 = [H[2], H[5], H[8]];
+  const lam = 2 / (norm(h1) + norm(h2));
+  let s = lam;
+  if (h3[2] * s < 0) s = -s;   // plane in front of the camera
+  let r1 = h1.map(x => x * s), r2 = h2.map(x => x * s), tp = h3.map(x => x * s);
+  const r3 = cross(r1, r2);
+  const Rp = orthonormalize([r1[0], r2[0], r3[0], r1[1], r2[1], r3[1], r1[2], r2[2], r3[2]]);
+  // plane frame -> object frame: X = O + u U + v V + w N  => R_obj = Rp * F^T, t = tp - R_obj O
+  const F = [plane.U[0], plane.V[0], plane.N[0], plane.U[1], plane.V[1], plane.N[1], plane.U[2], plane.V[2], plane.N[2]];
+  const toObj = (Rp_, tp_) => { const R = mat3mul(Rp_, transpose(F)); const RO = mulv(R, plane.O); return { R, t: [tp_[0] - RO[0], tp_[1] - RO[1], tp_[2] - RO[2]] }; };
+  const out = [toObj(Rp, tp)];
+  // second candidate: mirror the plane normal about the line of sight (planar pose ambiguity)
+  const n1 = [Rp[2], Rp[5], Rp[8]], d = tp.map(x => x / norm(tp));
+  const c = dot(n1, d), n2 = [2 * c * d[0] - n1[0], 2 * c * d[1] - n1[1], 2 * c * d[2] - n1[2]];
+  const axis = cross(n1, n2), sa = norm(axis);
+  if (sa > 1e-6) {
+    const ang = Math.atan2(sa, dot(n1, n2));
+    const Rm = expSO3(axis.map(x => x / sa * ang));
+    out.push(toObj(mat3mul(Rm, Rp), tp));
+  }
+  return out;
+}
+
+function reprojErrors(R, t, K, obj, img) {
+  return obj.map((X, i) => { const p = project(R, t, K, X); return Math.hypot(p[0] - img[i][0], p[1] - img[i][1]); });
+}
+
+// ---- quaternion helpers + One Euro filter for smoothing ----
+function matToQuat(m) {
+  const tr = m[0] + m[4] + m[8];
+  let x, y, z, w;
+  if (tr > 0) { const s = Math.sqrt(tr + 1) * 2; w = 0.25 * s; x = (m[7] - m[5]) / s; y = (m[2] - m[6]) / s; z = (m[3] - m[1]) / s; }
+  else if (m[0] > m[4] && m[0] > m[8]) { const s = Math.sqrt(1 + m[0] - m[4] - m[8]) * 2; w = (m[7] - m[5]) / s; x = 0.25 * s; y = (m[1] + m[3]) / s; z = (m[2] + m[6]) / s; }
+  else if (m[4] > m[8]) { const s = Math.sqrt(1 + m[4] - m[0] - m[8]) * 2; w = (m[2] - m[6]) / s; x = (m[1] + m[3]) / s; y = 0.25 * s; z = (m[5] + m[7]) / s; }
+  else { const s = Math.sqrt(1 + m[8] - m[0] - m[4]) * 2; w = (m[3] - m[1]) / s; x = (m[2] + m[6]) / s; y = (m[5] + m[7]) / s; z = 0.25 * s; }
+  return [x, y, z, w];
+}
+function quatToMat(q) {
+  const [x, y, z, w] = q;
+  return [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w),
+          2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w),
+          2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)];
+}
+
+class LowPass { constructor() { this.y = null; } f(x, a) { this.y = this.y === null ? x : a * x + (1 - a) * this.y; return this.y; } }
+const alpha = (cutoff, dt) => { const tau = 1 / (2 * Math.PI * cutoff); return 1 / (1 + tau / dt); };
+
+class OneEuro {   // vector One Euro filter (Casiez et al. 2012)
+  constructor(n, minCutoff, beta, dCutoff = 1.0) { this.n = n; this.minCutoff = minCutoff; this.beta = beta; this.dCutoff = dCutoff; this.reset(); }
+  reset() { this.x = Array.from({ length: this.n }, () => new LowPass()); this.dx = Array.from({ length: this.n }, () => new LowPass()); this.prev = null; this.tPrev = null; }
+  filter(v, t) {
+    if (this.prev === null) { this.prev = v.slice(); this.tPrev = t; v.forEach((x, i) => { this.x[i].f(x, 1); this.dx[i].f(0, 1); }); return v.slice(); }
+    const dt = Math.max(1e-3, t - this.tPrev); this.tPrev = t;
+    const ad = alpha(this.dCutoff, dt);
+    let speed = 0;
+    const d = v.map((x, i) => { const dd = this.dx[i].f((x - this.prev[i]) / dt, ad); speed += dd * dd; return dd; });
+    speed = Math.sqrt(speed);
+    const a = alpha(this.minCutoff + this.beta * speed, dt);
+    const out = v.map((x, i) => this.x[i].f(x, a));
+    this.prev = v.slice();
+    return out;
+  }
+}
+
+return { mat3mul, transpose, mulv, expSO3, orthonormalize, project, refinePose, planarPoseCandidates, reprojErrors, matToQuat, quatToMat, OneEuro };
+})();
+// ---- src/ar/tracker.js ----
+__mods["src/ar/tracker.js"] = (() => {
+// Cube / card tracker: marker detection -> correspondences -> multi-marker pose with disambiguation.
+const { MarkerDetector } = __mods["src/ar/detector.js"];
+const { refinePose, planarPoseCandidates, reprojErrors, mulv, project } = __mods["src/ar/pose.js"];
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+class Tracker {
+  constructor(layout, opts = {}) {
+    this.layout = layout;
+    const S = layout.edge;
+    this.targets = {};
+    // cube
+    const faces = layout.faces.map(f => ({ U: f.U, V: f.V, N: f.N, O: f.N.map(x => x * S / 2) }));
+    const cubeMarkers = new Map();
+    for (const m of layout.markers) cubeMarkers.set(m.id, { corners: m.corners, face: m.face });
+    this.targets.cube = { name: 'cube', markers: cubeMarkers, planes: faces, cell: layout.cell,
+      outline: cubeCorners(S) };
+    // flat card
+    if (layout.card) {
+      const cm = new Map();
+      for (const m of layout.card.markers) cm.set(m.id, { corners: m.corners, face: 0 });
+      const h = layout.card.size / 2;
+      this.targets.card = { name: 'card', markers: cm, planes: [{ U: [1, 0, 0], V: [0, 0, -1], N: [0, 1, 0], O: [0, 0, 0] }],
+        cell: layout.card.cell, outline: [[-h, 0, -h], [h, 0, -h], [h, 0, h], [-h, 0, h]] };
+    }
+    const codes = [...layout.markers, ...(layout.card ? layout.card.markers : [])].map(m => ({ id: m.id, cells: m.cells }));
+    this.detector = new MarkerDetector(codes, opts.detector || {});
+    this.prev = {};
+    this.frame = 0;
+  }
+
+  // rgba/w/h: processing image; roi: {x0, y0, scale} maps processing px -> video px (xv = x0 + xp / scale);
+  // K: intrinsics in video px. Returns {markers, poses: {cube?, card?}, stats}
+  process(rgba, w, h, roi, K, time, hint = {}) {
+    const t0 = now();
+    this.frame++;
+    const radii = [2, 3, 5];
+    const radius = hint.radius ?? radii[this.frame % radii.length];
+    const det = this.detector.detect(rgba, w, h, { radius });
+    const t1 = now();
+    const markers = det.map(m => ({ id: m.id, hamming: m.hamming, refined: !!m.refined,
+      corners: m.corners.map(p => [roi.x0 + p.x / roi.scale, roi.y0 + p.y / roi.scale]) }));
+    const poses = {};
+    for (const key of Object.keys(this.targets)) {
+      const tg = this.targets[key];
+      const mine = markers.filter(m => tg.markers.has(m.id));
+      if (!mine.length) continue;
+      const p = this._solve(tg, mine, K, this.prev[key] && time - this.prev[key].time < 0.5 ? this.prev[key] : null);
+      if (p) { p.time = time; poses[key] = p; this.prev[key] = p; }
+    }
+    return { markers, poses, stats: { detectMs: t1 - t0, totalMs: now() - t0, radius, candidates: this.detector.stats.candidates } };
+  }
+
+  _solve(tg, mine, K, prior) {
+    let groups = mine.map(m => ({ id: m.id, face: tg.markers.get(m.id).face, obj: tg.markers.get(m.id).corners, img: m.corners }));
+    for (let pass = 0; pass < 3; pass++) {
+      const obj = groups.flatMap(g => g.obj), img = groups.flatMap(g => g.img);
+      const cands = [];
+      if (prior) cands.push(refinePose(prior.R, prior.t, obj, img, K));
+      const needInit = !prior || cands[0].cost / obj.length > 4;
+      if (needInit) {
+        // planar candidates from the face with most markers
+        const count = new Map();
+        for (const g of groups) count.set(g.face, (count.get(g.face) || 0) + 1);
+        const faces = [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map(e => e[0]);
+        for (const f of faces) {
+          const gs = groups.filter(g => g.face === f);
+          const o = gs.flatMap(g => g.obj), im = gs.flatMap(g => g.img);
+          for (const c of planarPoseCandidates(o, im, K, tg.planes[f])) cands.push(refinePose(c.R, c.t, obj, img, K));
+        }
+      }
+      // reject candidates where an observed face points away from the camera
+      const ok = cands.filter(c => c.t[2] > 0 && groups.every(g => facing(c, tg.planes[g.face])));
+      const pool = ok.length ? ok : cands;
+      pool.sort((a, b) => a.cost - b.cost);
+      const best = pool[0];
+      if (!best) return null;
+      // per-marker error, drop the worst outlier and re-solve
+      const errs = groups.map(g => { const e = reprojErrors(best.R, best.t, K, g.obj, g.img); return e.reduce((s, x) => s + x, 0) / 4; });
+      const sorted = errs.slice().sort((a, b) => a - b), med = sorted[sorted.length >> 1];
+      let worst = 0;
+      for (let i = 1; i < errs.length; i++) if (errs[i] > errs[worst]) worst = i;
+      if (groups.length > 1 && errs[worst] > Math.max(4, 3 * med)) { groups = groups.filter((_, i) => i !== worst); prior = best; continue; }
+      const all = reprojErrors(best.R, best.t, K, obj, img);
+      const rms = Math.sqrt(all.reduce((s, x) => s + x * x, 0) / all.length);
+      const faces = [...new Set(groups.map(g => g.face))];
+      // ambiguity margin: how much worse the runner-up (different orientation) is
+      let margin = Infinity;
+      for (const c of pool.slice(1)) {
+        const ang = rotAngle(best.R, c.R);
+        if (ang > 5) { margin = Math.min(margin, (c.cost - best.cost) / Math.max(best.cost, 1)); }
+      }
+      return { R: best.R, t: best.t, rms, n: groups.length, ids: groups.map(g => g.id), faces, ambiguous: margin < 0.5 && groups.length === 1 };
+    }
+    return null;
+  }
+}
+
+function facing(pose, plane) {
+  const n = mulv(pose.R, plane.N), o = mulv(pose.R, plane.O);
+  const c = [o[0] + pose.t[0], o[1] + pose.t[1], o[2] + pose.t[2]];
+  return dot(n, c) < 0;
+}
+
+function rotAngle(A, B) {   // angle between rotations in degrees
+  let tr = 0;
+  for (let i = 0; i < 3; i++) for (let k = 0; k < 3; k++) tr += A[i * 3 + k] * B[i * 3 + k];
+  return Math.acos(Math.max(-1, Math.min(1, (tr - 1) / 2))) * 180 / Math.PI;
+}
+
+function cubeCorners(S) {
+  const h = S / 2, out = [];
+  for (const x of [-h, h]) for (const y of [-h, h]) for (const z of [-h, h]) out.push([x, y, z]);
+  return out;
+}
+
+// bounding box (video px) of the target outline under a pose; null if behind the camera
+function projectedBox(target, pose, K) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const X of target.outline) {
+    const p = project(pose.R, pose.t, K, X);
+    if (p[2] <= 0) return null;
+    x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]);
+  }
+  return { x0, y0, x1, y1 };
+}
+
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+return { Tracker, projectedBox };
+})();
+// ---- src/ar/session.js ----
+__mods["src/ar/session.js"] = (() => {
+// AR session: phone camera -> marker tracking -> smoothed pose of the printed cube (or the flat card),
+// plus "up" from the phone's tilt sensor. Tracking logic follows the ar-cube viewer (wave84mn/ar-cube).
+const { Tracker, projectedBox } = __mods["src/ar/tracker.js"];
+const { OneEuro, matToQuat, quatToMat, mulv } = __mods["src/ar/pose.js"];
+const D2R = Math.PI / 180;
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+class ArSession {
+  constructor(opts = {}) {
+    this.fov = opts.fov || 66;            // camera field of view along the long side (degrees)
+    this.layoutUrl = opts.layoutUrl || 'ar/layout.json';
+    this.video = document.createElement('video');
+    this.video.setAttribute('playsinline', ''); this.video.muted = true; this.video.autoplay = true;
+    this.frame = document.createElement('canvas');        // the exact frame that was tracked; drawn as background
+    this.fctx = this.frame.getContext('2d', { alpha: false });
+    this.proc = document.createElement('canvas');
+    this.pctx = this.proc.getContext('2d', { willReadFrequently: true });
+    this.frameVersion = 0;
+    this.tracker = null;
+    this.running = false;
+    this.sensor = { ok: false, beta: 0, gamma: 0, t: 0 };
+    this.upOverride = null;               // tests
+    this.T = {
+      cube: { filtT: new OneEuro(3, 2.0, 0.3, 5.0), filtQ: new OneEuro(4, 2.0, 40, 5.0), raw: null, seen: -10 },
+      card: { filtT: new OneEuro(3, 2.0, 0.3, 5.0), filtQ: new OneEuro(4, 2.0, 40, 5.0), raw: null, seen: -10 },
+    };
+    this.active = null;                   // 'cube' | 'card' | null
+    this.pose = null;                     // { R, t, target, time }
+    this.fps = 0; this.lastT = 0; this.n = 0; this.PROC = 640; this.cvMs = 0; this.markers = 0;
+    this._onOrient = (e) => {
+      if (e.beta == null || e.gamma == null) return;
+      const s = this.sensor; s.ok = true; s.beta = e.beta; s.gamma = e.gamma; s.t = performance.now();
+    };
+  }
+
+  // Must be called from a tap: iOS asks for the tilt sensor and the camera there.
+  async start() {
+    const sensorP = this._enableSensors();
+    if (!window.isSecureContext) throw Object.assign(new Error('insecure'), { code: 'insecure' });
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw Object.assign(new Error('nocamera'), { code: 'unsupported' });
+    const layoutP = this.tracker ? null : fetch(this.layoutUrl).then((r) => { if (!r.ok) throw new Error('layout ' + r.status); return r.json(); });
+    if (layoutP) layoutP.catch(() => {});   // reported below, after the camera starts
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: false,
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } });
+    } catch (e) {
+      const name = e && e.name;
+      throw Object.assign(new Error(String(e && e.message || e)), { code: name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : name === 'NotFoundError' || name === 'OverconstrainedError' ? 'nocamera' : 'failed' });
+    }
+    this.stream = stream;
+    this.video.srcObject = stream;
+    try { await this.video.play(); } catch { /* autoplay with muted video normally succeeds */ }
+    if (layoutP) this.tracker = new Tracker(await layoutP);
+    await sensorP;
+    this.running = true;
+    this._loop();
+  }
+
+  stop() {
+    this.running = false;
+    if (this.stream) for (const tr of this.stream.getTracks()) tr.stop();
+    this.stream = null; this.video.srcObject = null;
+    this.active = null; this.pose = null;
+    window.removeEventListener('deviceorientation', this._onOrient);
+  }
+
+  async _enableSensors() {
+    try {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const r = await DeviceOrientationEvent.requestPermission();
+        if (r !== 'granted') return;
+      }
+      window.addEventListener('deviceorientation', this._onOrient);
+    } catch { /* no sensor: fall back to "screen up is world up" */ }
+  }
+
+  get sensorOn() { return this.sensor.ok && performance.now() - this.sensor.t < 1500; }
+
+  // World-up in OpenCV camera coordinates (x right, y down, z forward).
+  upInCamera() {
+    if (this.upOverride) return this.upOverride;
+    if (!this.sensorOn) return [0, -1, 0];  // assume the phone is held upright
+    const b = this.sensor.beta * D2R, g = this.sensor.gamma * D2R;
+    const ux = -Math.cos(b) * Math.sin(g), uy = Math.sin(b), uz = Math.cos(b) * Math.cos(g);
+    const th = ((screen.orientation && screen.orientation.angle) ?? window.orientation ?? 0) * D2R;
+    const sx = ux * Math.cos(th) - uy * Math.sin(th), sy = ux * Math.sin(th) + uy * Math.cos(th);
+    return [sx, -sy, -uz];
+  }
+
+  intrinsics() {
+    const vw = this.video.videoWidth, vh = this.video.videoHeight, L = Math.max(vw, vh);
+    const f = (L / 2) / Math.tan(this.fov * D2R / 2);
+    return { fx: f, fy: f, cx: vw / 2, cy: vh / 2, vw, vh };
+  }
+
+  _loop() {
+    const v = this.video;
+    if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+      const cb = (now) => { if (!this.running) return; try { this._onFrame(now); } catch (e) { console.error(e); } v.requestVideoFrameCallback(cb); };
+      v.requestVideoFrameCallback(cb);
+    } else {
+      let last = -1;
+      const raf = (now) => { if (!this.running) return; if (v.currentTime !== last) { last = v.currentTime; try { this._onFrame(now); } catch (e) { console.error(e); } } requestAnimationFrame(raf); };
+      requestAnimationFrame(raf);
+    }
+  }
+
+  _region(K, t) {
+    const vw = K.vw, vh = K.vh, L = Math.max(vw, vh);
+    for (const key of ['cube', 'card']) {
+      const st = this.T[key];
+      if (!st.raw || t - st.seen > Math.max(0.25, 2.5 / Math.max(this.fps, 1))) continue;
+      const tg = this.tracker.targets[key];
+      if (!tg) continue;
+      const b = projectedBox(tg, st.raw, K);
+      if (!b) continue;
+      const pad = 0.35 * Math.max(b.x1 - b.x0, b.y1 - b.y0) + 24;
+      const x0 = Math.max(0, Math.floor(b.x0 - pad)), y0 = Math.max(0, Math.floor(b.y0 - pad));
+      const x1 = Math.min(vw, Math.ceil(b.x1 + pad)), y1 = Math.min(vh, Math.ceil(b.y1 + pad));
+      if (x1 - x0 < 32 || y1 - y0 < 32) continue;
+      const cellNative = tg.cell * K.fx / Math.max(50, st.raw.t[2]);
+      const scale = Math.min(1, this.PROC / Math.max(x1 - x0, y1 - y0), 10 / cellNative);
+      return { sx: x0, sy: y0, sw: x1 - x0, sh: y1 - y0, scale, radius: clamp(Math.round(cellNative * scale), 2, 7) };
+    }
+    if (this.n % 2 === 0) return { sx: 0, sy: 0, sw: vw, sh: vh, scale: this.PROC / L, radius: [2, 3, 5][(this.n >> 1) % 3] };
+    const cw = Math.round(vw / 2), ch = Math.round(vh / 2);
+    return { sx: Math.round((vw - cw) / 2), sy: Math.round((vh - ch) / 2), sw: cw, sh: ch, scale: Math.min(1, this.PROC / Math.max(cw, ch)), radius: [3, 5][(this.n >> 1) % 2] };
+  }
+
+  _onFrame(nowMs) {
+    const v = this.video, vw = v.videoWidth, vh = v.videoHeight;
+    if (!vw || !this.tracker) return;
+    this.n++;
+    const t = nowMs / 1000;
+    if (this.lastT) this.fps = this.fps * 0.9 + 0.1 / Math.max(1e-3, t - this.lastT);
+    this.lastT = t;
+    const K = this.intrinsics();
+    if (this.frame.width !== vw || this.frame.height !== vh) { this.frame.width = vw; this.frame.height = vh; }
+    this.fctx.drawImage(v, 0, 0, vw, vh);
+    const r = this._region(K, t);
+    const w = Math.max(16, Math.round(r.sw * r.scale)), h = Math.max(16, Math.round(r.sh * r.scale));
+    if (this.proc.width !== w || this.proc.height !== h) { this.proc.width = w; this.proc.height = h; }
+    const c0 = performance.now();
+    this.pctx.drawImage(this.frame, r.sx, r.sy, r.sw, r.sh, 0, 0, w, h);
+    const img = this.pctx.getImageData(0, 0, w, h);
+    const res = this.tracker.process(img.data, w, h, { x0: r.sx, y0: r.sy, scale: w / r.sw }, K, t, { radius: r.radius });
+    this.cvMs = this.cvMs * 0.85 + 0.15 * (performance.now() - c0);
+    if (this.n % 15 === 0) {
+      if (this.cvMs > 30 && this.PROC > 400) this.PROC = Math.round(this.PROC * 0.85);
+      else if (this.cvMs < 14 && this.PROC < 640) this.PROC = Math.min(640, Math.round(this.PROC * 1.1));
+    }
+    this.markers = res.markers.length;
+    this._update(res, t);
+    this.K = K;
+    this.frameVersion++;
+  }
+
+  _update(res, t) {
+    for (const key of ['cube', 'card']) {
+      const st = this.T[key], p = res.poses[key];
+      const good = p && (p.rms < 3.5 || (p.n >= 2 && p.rms < 6)) && !p.ambiguous;
+      if (!good) continue;
+      if (t - st.seen > 0.6) { st.filtT.reset(); st.filtQ.reset(); st.prevQ = null; }
+      st.raw = p; st.seen = t;
+      let qq = matToQuat(p.R);
+      if (st.prevQ && qq[0] * st.prevQ[0] + qq[1] * st.prevQ[1] + qq[2] * st.prevQ[2] + qq[3] * st.prevQ[3] < 0) qq = qq.map((x) => -x);
+      st.prevQ = qq;
+      const qf = st.filtQ.filter(qq, t), tf = st.filtT.filter(p.t, t);
+      const nq = Math.hypot(...qf);
+      st.q = qf.map((x) => x / nq); st.t = tf;
+    }
+    const visible = (k) => this.T[k].raw && t - this.T[k].seen < Math.max(0.3, 2.5 / Math.max(this.fps, 1));
+    this.active = visible('cube') ? 'cube' : visible('card') ? 'card' : null;
+    if (this.active) {
+      const st = this.T[this.active];
+      this.pose = { R: quatToMat(st.q), t: st.t.slice(), target: this.active, time: performance.now() / 1000 };
+    }
+  }
+
+  // Seconds since the cube (or card) was last seen.
+  get age() { return this.pose && this.active ? performance.now() / 1000 - this.pose.time : Infinity; }
+  get tracking() { return !!this.active && this.age < 0.35; }
+  get edge() { return this.tracker ? this.tracker.layout.edge : 70; }
+}
+
+
+return { ArSession };
+})();
+// ---- src/main.js ----
+__mods["src/main.js"] = (() => {
 // ===== Gusinjska kocka — scene, input and screens =====
-
-
-
+const { N, H, BALL_R, FACES, LEVELS, PARS, BUILDINGS, parseLevel, Game, makeAutopilot, tileU, tileV, isSolidChar, isDoorChar, isBuildingChar, v3, stars, facePoint } = __mods["src/core.js"];
+const { q, m4, MeshBuilder, Renderer, hex, jitter, shade, mulberry } = __mods["src/render.js"];
+const { SoundKit } = __mods["src/sound.js"];
+const { ArSession } = __mods["src/ar/session.js"];
 // ---------- text ----------
 const TXT = {
   me: {
@@ -1416,6 +2522,15 @@ const TXT = {
     par: 'Tri zvjezdice: do {par} s', newBest: 'Novi rekord', allDone: 'Svi nivoi su završeni.',
     noGL: 'Ovaj preglednik ne može prikazati 3D. Probaj u Chromeu ili Safariju.',
     keys: 'Tastatura: strelice naginju, Q i E okreću, razmak poravnava.',
+    arPlay: 'Igraj s AR kockom', arStarting: 'Pokrećem kameru…', arExit: 'Igraj prstom',
+    arFind: 'Usmjeri kameru na kocku.', arFindSub: 'Drži kocku 20–35 cm od telefona, na dobrom svjetlu.',
+    arTurnUp: 'Okreni kocku tako da kugla bude gore.', arTurnSub: 'Igra kreće kad strana s kuglom bude ravno.',
+    arLost: 'Kocka se ne vidi. Igra čeka.', arNoSensor: 'Senzor nagiba nije dostupan, zato drži telefon uspravno.',
+    arPrint: 'Nemaš kocku? Isprintaj papirnu (PDF).',
+    errDenied: 'Pristup kameri je odbijen. Dozvoli kameru za ovu stranicu u postavkama preglednika.',
+    errNoCam: 'Na ovom uređaju nije pronađena kamera.',
+    errHere: 'Ovdje kamera nije dostupna. Za AR otvori igru na adresi:',
+    errFailed: 'Kamera se nije pokrenula. Otvori igru u Chromeu (Android) ili Safariju (iPhone).',
   },
   sq: {
     tagline: 'Anoje kubin dhe rrokullise topin deri te ndërtesat e Gucisë.',
@@ -1433,6 +2548,15 @@ const TXT = {
     par: 'Tri yje: deri në {par} s', newBest: 'Rekord i ri', allDone: 'I përfundove të gjitha nivelet.',
     noGL: 'Ky shfletues nuk mund të shfaqë 3D. Provo në Chrome ose Safari.',
     keys: 'Tastiera: shigjetat e anojnë kubin, Q dhe E e rrotullojnë, hapësira e drejton.',
+    arPlay: 'Luaj me kubin AR', arStarting: 'Po ndizet kamera…', arExit: 'Luaj me gisht',
+    arFind: 'Drejtoje kamerën nga kubi.', arFindSub: 'Mbaje kubin 20–35 cm larg telefonit, në dritë të mirë.',
+    arTurnUp: 'Ktheje kubin që topi të jetë sipër.', arTurnSub: 'Loja nis kur faqja me topin të jetë e drejtë.',
+    arLost: 'Kubi nuk shihet. Loja pret.', arNoSensor: 'Sensori i pjerrësisë nuk është i qasshëm, prandaj mbaje telefonin drejt.',
+    arPrint: 'S’ke kub? Printo një prej letre (PDF).',
+    errDenied: 'Qasja në kamerë u refuzua. Lejoje kamerën për këtë faqe te cilësimet e shfletuesit.',
+    errNoCam: 'Në këtë pajisje nuk u gjet kamerë.',
+    errHere: 'Kamera nuk është e qasshme këtu. Për AR hape lojën në adresën:',
+    errFailed: 'Kamera nuk u ndez. Hape lojën në Chrome (Android) ose Safari (iPhone).',
   },
   en: {
     tagline: 'Tilt the cube and roll the ball to the landmarks of Gusinje.',
@@ -1450,6 +2574,15 @@ const TXT = {
     par: 'Three stars: {par} s or less', newBest: 'New best', allDone: 'All levels complete.',
     noGL: 'This browser can’t show 3D. Try Chrome or Safari.',
     keys: 'Keyboard: arrows tilt, Q and E turn, space levels.',
+    arPlay: 'Play with the AR cube', arStarting: 'Starting the camera…', arExit: 'Play by touch',
+    arFind: 'Point the camera at the cube.', arFindSub: 'Hold the cube 20–35 cm from the phone, in good light.',
+    arTurnUp: 'Turn the cube so the ball is on top.', arTurnSub: 'The game starts when the ball’s face is level.',
+    arLost: 'Can’t see the cube. The game is waiting.', arNoSensor: 'No tilt sensor here, so hold the phone upright.',
+    arPrint: 'No cube? Print a paper one (PDF).',
+    errDenied: 'Camera access was blocked. Allow the camera for this site in the browser settings.',
+    errNoCam: 'No camera was found on this device.',
+    errHere: 'The camera isn’t available here. For AR, open the game at:',
+    errFailed: 'The camera didn’t start. Open the game in Chrome (Android) or Safari (iPhone).',
   },
 };
 
@@ -1630,7 +2763,7 @@ const $ = (id) => document.getElementById(id);
 const els = {
   stage: $('stage'), bg: $('bg'), gl: $('gl'), hud: $('hud'), controls: $('controls'), title: $('title'), done: $('done'),
   toast: $('toast'), hint: $('hint'), chips: $('chips'), time: $('time'), lvlNum: $('lvlNum'), lvlName: $('lvlName'),
-  levels: $('levels'), nogl: $('nogl'),
+  levels: $('levels'), nogl: $('nogl'), arHint: $('arHint'),
 };
 
 // ---------- sound (see sound.js; starts after the first tap, as browsers require) ----------
@@ -1658,6 +2791,13 @@ let camShift = 0.36, camZoom = 1.18, camEl = 0.6, demo = false, autopilot = null
 let toastTimer = 0, completeTimer = -1, idleSpin = 0, sharedMeshes = null;
 const keys = new Set();
 
+// ---------- AR mode: the printed cube drives the game ----------
+const SITE = 'https://bertiscus.github.io/gusinjska-kocka/';
+const params = new URLSearchParams(location.search);
+let mode = 'touch', ar = null, arStarting = false;
+let gAR = null, readyHold = 0, arView = null;
+const AR_SCALE = 1.02;    // draw the game cube a little larger than the real one so its edges stay hidden
+
 function startLevel(k, toScreen = 'play') {
   levelIndex = k;
   level = parseLevel(LEVELS[k]);
@@ -1680,7 +2820,9 @@ function setScreen(s) {
   els.done.hidden = s !== 'done';
   els.hud.hidden = s !== 'play';
   els.controls.hidden = s !== 'play';
-  els.hint.hidden = !(s === 'play' && game && game.phase === 'ready' && !demo);
+  els.hint.hidden = !(s === 'play' && game && game.phase === 'ready' && !demo && mode === 'touch');
+  if (s === 'title' && mode === 'ar') stopAR();
+  updateModeUI();
   if (s !== 'play') { els.toast.hidden = true; toastTimer = 0; }
   if (s === 'title') renderTitle();
   if (s === 'play') { requestWake(); placeToast(); }
@@ -1721,6 +2863,7 @@ function renderHud() {
   $('btnFlat').textContent = t('flat'); $('btnFlat').setAttribute('aria-label', t('flatLabel'));
   $('btnRestart').setAttribute('aria-label', t('restart'));
   $('btnMenu').setAttribute('aria-label', t('menu'));
+  $('btnExitAR').textContent = t('arExit');
   updateSoundBtn();
   $('hintText').textContent = t('hint');
   $('hintGoal').textContent = t('goal');
@@ -1740,6 +2883,8 @@ function renderTitle() {
   $('tagline').textContent = t('tagline');
   updateLoadNote();
   $('keys').textContent = t('keys');
+  if (!arStarting) $('btnAR').lastChild.textContent = t('arPlay');
+  $('arPrint').textContent = t('arPrint');
   document.documentElement.lang = { me: 'sr-Latn-ME', sq: 'sq', en: 'en' }[lang];
   document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   els.levels.innerHTML = '';
@@ -1870,6 +3015,8 @@ $('btnRestart').addEventListener('click', () => { startLevel(levelIndex, 'play')
 $('btnMenu').addEventListener('click', () => { setScreen('title'); audio.play('click'); });
 $('btnSound').addEventListener('click', () => { audio.init(); save.muted = !save.muted; writeSave(); updateSoundBtn(); if (audio.kit) audio.kit.setMuted(save.muted); audio.play('click'); });
 $('btnPlay').addEventListener('click', () => { audio.init(); startLevel(levelIndex, 'play'); audio.play('go'); });
+$('btnAR').addEventListener('click', () => { startAR(); });
+$('btnExitAR').addEventListener('click', () => { stopAR(); levelBallFace(); audio.play('click'); });
 $('btnNext').addEventListener('click', () => { startLevel(Math.min(levelIndex + 1, LEVELS.length - 1), 'play'); audio.play('go'); });
 $('btnAgain').addEventListener('click', () => { startLevel(levelIndex, 'play'); audio.play('go'); });
 $('btnLevels').addEventListener('click', () => { setScreen('title'); audio.play('click'); });
@@ -1915,10 +3062,71 @@ function drawBackdrop() {
   }
 }
 
+// ---------- AR start / stop / hints ----------
+async function startAR() {
+  if (arStarting) return;
+  arStarting = true;
+  audio.init();
+  const btn = $('btnAR'), err = $('arErr');
+  err.hidden = true; btn.disabled = true; btn.lastChild.textContent = t('arStarting');
+  try {
+    if (!ar) ar = new ArSession({ fov: params.has('fov') ? +params.get('fov') : 66 });
+    await ar.start();
+    mode = 'ar'; gAR = null; readyHold = 0;
+    document.body.classList.add('is-ar');
+    resize();
+    startLevel(levelIndex, 'play');
+    audio.play('click');
+  } catch (e) {
+    const framed = (() => { try { return window.self !== window.top; } catch { return true; } })();
+    const code = e && e.code;
+    const key = framed || code === 'insecure' ? 'errHere' : code === 'denied' ? 'errDenied' : code === 'nocamera' ? 'errNoCam' : 'errFailed';
+    err.innerHTML = '';
+    const p = document.createElement('span'); p.textContent = t(key); err.appendChild(p);
+    if (key === 'errHere') { const a = document.createElement('a'); a.href = SITE; a.target = '_blank'; a.rel = 'noopener'; a.textContent = SITE; err.append(' ', a); }
+    err.hidden = false;
+    console.warn('AR', e);
+  } finally {
+    arStarting = false; btn.disabled = false; btn.lastChild.textContent = t('arPlay');
+  }
+}
+function stopAR() {
+  if (ar) ar.stop();
+  mode = 'touch';
+  document.body.classList.remove('is-ar');
+  els.arHint.hidden = true;
+  resize();
+  updateModeUI();
+}
+function updateModeUI() {
+  const isAR = mode === 'ar';
+  for (const id of ['btnSpinL', 'btnSpinR', 'btnFlat']) $(id).hidden = isAR;
+  $('btnExitAR').hidden = !isAR;
+  els.bg.hidden = isAR;
+  if (!isAR || screen !== 'play') els.arHint.hidden = true;
+}
+let arDbgT = 0;
+function updateArHint(tracked) {
+  const h = els.arHint;
+  let title = '', sub = '';
+  if (screen === 'play') {
+    if (!tracked) { title = game.phase === 'ready' ? t('arFind') : t('arLost'); sub = t('arFindSub'); }
+    else if (game.phase === 'ready') { title = t('arTurnUp'); sub = ar.sensorOn || ar.upOverride ? t('arTurnSub') : t('arNoSensor'); }
+  }
+  h.hidden = !title;
+  if (title && $('arHintTitle').textContent !== title) { $('arHintTitle').textContent = title; $('arHintSub').textContent = sub; }
+  if (params.has('debug') && (clock - arDbgT > 0.25)) {
+    arDbgT = clock;
+    const p = ar.pose;
+    $('arDebug').hidden = false;
+    $('arDebug').textContent = `fps ${ar.fps.toFixed(0)} · cv ${ar.cvMs.toFixed(0)} ms · markers ${ar.markers} · ${ar.active || 'none'}${p ? ` · z ${p.t[2].toFixed(0)} mm` : ''} · tilt sensor ${ar.sensorOn ? 'on' : 'off'}${gAR ? ` · g ${gAR.map((x) => x.toFixed(2)).join(' ')}` : ''}`;
+  }
+}
+
 // ---------- render loop ----------
 let vpW = 0, vpH = 0;
 function resize() {
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(mode === 'ar' ? 1.5 : 2, window.devicePixelRatio || 1);
   vpW = Math.max(1, Math.round(els.gl.clientWidth * dpr)); vpH = Math.max(1, Math.round(els.gl.clientHeight * dpr));
   els.gl.width = vpW; els.gl.height = vpH;
   drawBackdrop();
@@ -1958,20 +3166,37 @@ function frame(now) {
     const s = 220 * real;
     tiltBy((keys.has('ArrowRight') ? s : 0) - (keys.has('ArrowLeft') ? s : 0), (keys.has('ArrowDown') ? s : 0) - (keys.has('ArrowUp') ? s : 0));
   }
-  if (screen !== 'play') { idleSpin = real * 0.25; Q = q.norm(q.mul(q.axis([0, 1, 0], idleSpin), Q)); }
+  if (screen !== 'play' && mode === 'touch') { idleSpin = real * 0.25; Q = q.norm(q.mul(q.axis([0, 1, 0], idleSpin), Q)); }
+
+  // AR: real-world gravity in cube coordinates; the game waits while the cube is out of sight
+  let arTracked = false;
+  if (mode === 'ar') {
+    arTracked = ar.tracking;
+    if (arTracked) {
+      const Rm = ar.pose.R, up = ar.upInCamera(), gc = [-up[0], -up[1], -up[2]];
+      const g = v3.norm([Rm[0] * gc[0] + Rm[3] * gc[1] + Rm[6] * gc[2], Rm[1] * gc[0] + Rm[4] * gc[1] + Rm[7] * gc[2], Rm[2] * gc[0] + Rm[5] * gc[1] + Rm[8] * gc[2]]);
+      gAR = gAR ? v3.norm(v3.add(gAR, v3.scale(v3.sub(g, gAR), 1 - Math.exp(-real / 0.06)))) : g;
+      if (screen === 'play' && game.phase === 'ready') {
+        const flat = -v3.dot(gAR, FACES[level.start.f].n);
+        readyHold = flat > 0.965 ? readyHold + real : 0;
+        if (readyHold > 0.35) { game.begin(); audio.play('go'); }
+      }
+    }
+    updateArHint(arTracked);
+  }
 
   // physics (in steps of at most 1/60 s)
-  let remaining = screen === 'play' ? dt : 0;
+  let remaining = screen === 'play' && (mode === 'touch' || arTracked) ? dt : 0;
   while (remaining > 1e-6) {
     const h = Math.min(remaining, 1 / 60); remaining -= h;
-    if (demo && game.phase !== 'done') {
+    if (demo && game.phase !== 'done' && mode === 'touch') {
       game.begin(); els.hint.hidden = true;
       const gTarget = autopilot(h);
       const gw = q.rot(Q, gTarget);
       const turn = q.fromTo(gw, [0, -1, 0]);
       Q = q.norm(q.mul(q.slerp(q.ident(), turn, Math.min(1, h * 9)), Q));
     }
-    const gL = q.rot(q.conj(Q), [0, -1, 0]);
+    const gL = mode === 'ar' ? gAR : q.rot(q.conj(Q), [0, -1, 0]);
     const prevF = game.ball.f;
     const before = facePoint(game.ball.f, game.ball.u, game.ball.v, BALL_R);
     const ev = game.update(h, gL);
@@ -2000,11 +3225,47 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+// Projection and cube matrix that put the game cube exactly on the printed cube (OpenCV pose, mm).
+function arCamera() {
+  const K = ar.K;
+  if (!K || !K.vw) return null;
+  const W = vpW, Hh = vpH, vw = K.vw, vh = K.vh;
+  const sFill = Math.max(W / vw, Hh / vh), sFit = Math.min(W / vw, Hh / vh);
+  const s = sFill / sFit > 1.25 ? sFit : sFill;   // fill the screen unless that crops too much of the image
+  const ox = (vw - W / s) / 2, oy = (vh - Hh / s) / 2;
+  const fx = K.fx * s, fy = K.fy * s, cx = (K.cx - ox) * s, cy = (K.cy - oy) * s;
+  const n = 5, f = 20000;
+  const vp = new Float32Array([2 * fx / W, 0, 0, 0, 0, 2 * fy / Hh, 0, 0, 1 - 2 * cx / W, 2 * cy / Hh - 1, -(f + n) / (f - n), -1, 0, 0, -2 * f * n / (f - n), 0]);
+  const bg = { source: ar.frame, version: ar.frameVersion, sx: vw * s / W, sy: vh * s / Hh };
+  const up = ar.upInCamera(), upGL = [up[0], -up[1], -up[2]];
+  const sun = v3.norm(v3.add(v3.add(v3.scale(upGL, 0.82), [-0.45, 0, 0]), [0, 0, 0.38]));
+  let cube = null;
+  if (ar.tracking) {
+    const Rm = ar.pose.R, tm = ar.pose.t, unit = ar.edge / N * AR_SCALE;
+    const off = ar.pose.target === 'card' ? [0, ar.edge / 2 * AR_SCALE, 0] : [0, 0, 0];
+    const tt = [Rm[0] * off[0] + Rm[1] * off[1] + Rm[2] * off[2] + tm[0], Rm[3] * off[0] + Rm[4] * off[1] + Rm[5] * off[2] + tm[1], Rm[6] * off[0] + Rm[7] * off[1] + Rm[8] * off[2] + tm[2]];
+    cube = new Float32Array([
+      Rm[0] * unit, -Rm[3] * unit, -Rm[6] * unit, 0,
+      Rm[1] * unit, -Rm[4] * unit, -Rm[7] * unit, 0,
+      Rm[2] * unit, -Rm[5] * unit, -Rm[8] * unit, 0,
+      tt[0], -tt[1], -tt[2], 1]);
+  }
+  return { vp, eye: [0, 0, 0], sun, bg, cube, K, s, ox, oy };
+}
+
 function draw() {
-  const { eye, vp } = camera();
-  const sun = v3.norm([-0.45, 0.82, 0.38]);
-  R.begin(vpW, vpH, vp, eye, sun, clock);
-  const cube = m4.fromQ(Q);
+  let view;
+  if (mode === 'ar') {
+    view = arCamera();
+    if (!view) { R.begin(vpW, vpH, m4.ident(), [0, 0, 1], [0, 1, 0], clock, { source: null }); return; }
+  } else {
+    const c = camera();
+    view = { vp: c.vp, eye: c.eye, sun: v3.norm([-0.45, 0.82, 0.38]), bg: null, cube: m4.fromQ(Q) };
+  }
+  arView = view;
+  const { eye, vp, sun, cube } = view;
+  R.begin(vpW, vpH, vp, eye, sun, clock, view.bg);
+  if (!cube) return;   // AR: cube not in view, show only the camera image
   R.draw(gpu.world, cube);
   world.buildings.forEach((e, i) => {
     const done = game.visited.has(e.b.letter);
@@ -2049,7 +3310,8 @@ function draw() {
     R.draw(sharedMeshes.blob, m4.mul(cube, m4.basis(F.u, F.n, Z, v3.add(sp, visOff))), { depthWrite: false, alpha: scale });
   }
   // ghost ball when its face points away from the camera
-  const nW = q.rot(Q, F.n), pW = q.rot(Q, pos), toCam = v3.norm(v3.sub(eye, pW));
+  const nW = v3.norm([cube[0] * F.n[0] + cube[4] * F.n[1] + cube[8] * F.n[2], cube[1] * F.n[0] + cube[5] * F.n[1] + cube[9] * F.n[2], cube[2] * F.n[0] + cube[6] * F.n[1] + cube[10] * F.n[2]]);
+  const pW = m4.apply(cube, pos), toCam = v3.norm(v3.sub(eye, pW));
   if (v3.dot(nW, toCam) < 0.08 && game.phase !== 'sink') R.draw(sharedMeshes.ball, ballM, { alpha: 0.4, depthTest: false, depthWrite: false, tint: [0.06, 0.55, 0.55, 0.35] });
 }
 
@@ -2072,8 +3334,12 @@ window.__gk = {
   get game() { return game; }, get screen() { return screen; }, get Q() { return Q; },
   startLevel, setDemo(v) { demo = v; }, setTimeScale(v) { timeScale = v; },
   tilt: tiltBy, SoundKit, get audio() { return audio; },
+  get ar() { return ar; }, get mode() { return mode; }, get gAR() { return gAR; }, get arView() { return arView; }, startAR, stopAR,
 };
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});
+
+return {  };
+})();
 
 </script>
 

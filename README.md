@@ -6,6 +6,8 @@ A tilt-maze game on a six-sided cube. Tilt the cube, roll the ball through a maz
 
 **Levels:** 1 Kula, 2 Izvori, 3 Cijela kocka, 4 Bogomolje, 5 Gusinje (all nine buildings).
 
+**AR:** on the start screen, tap **Igraj s AR kockom / Luaj me kubin AR / Play with the AR cube** and point the phone's camera at the printed AR cube (the 70 mm cube from `wave84mn/ar-cube`, or the paper one in `ar/AR_cube_paper_test.pdf`). The game cube is drawn onto the real cube; tilt the real cube and the ball rolls downhill. The flat card (page 1 of the PDF) works too: the game cube stands on it. AR needs the camera, so it works from the GitHub Pages site in Chrome (Android) or Safari (iPhone), not inside the Claude preview.
+
 **Play:** open `index.html` (or the GitHub Pages site for this repo) on a phone and drag across the screen to tilt the cube.
 
 The buildings are our own 3D models, reduced to light game versions with their photo textures (see *Buildings* below).
@@ -22,9 +24,14 @@ The buildings are our own 3D models, reduced to light game versions with their p
 | `src/sound.js` | All sound effects, made in the browser (no audio files): chimes in one pentatonic key, rolling, knocks, splash, wind and birds |
 | `src/main.js` | Scene, model loading, controls, menus, all game text (ME / SQ / EN) |
 | `src/page.html` | Page layout and styles |
-| `build.mjs` | Bundles `src/` into `index.html` |
+| `src/ar/session.js` | AR mode: camera, tracking loop, pose smoothing, "up" from the phone's tilt sensor |
+| `src/ar/detector.js`, `pose.js`, `tracker.js` | Marker detector and pose solver, from `wave84mn/ar-cube` (contour code adapted from js-aruco, MIT, see `src/ar/LICENSE-js-aruco.txt`) |
+| `ar/layout.json` | Marker layout of the printed cube and card (same file as in `ar-cube`) |
+| `ar/AR_cube_paper_test.pdf` | Printable paper cube and flat card |
+| `build.mjs` | Bundles `src/` into `index.html` (each module keeps its own scope) |
 | `test/core.test.mjs` | Checks edge crossing, level maps, that the autopilot finishes every level, and a 400-second random-tilt test |
 | `test/browser_test.py` | Plays every level in a phone-sized headless browser and takes screenshots |
+| `test/ar_video.py`, `test/ar_test.py` | AR test: renders a fake camera video of the cube (or card) with known poses, plays it as the browser's camera and checks pose, on-screen alignment, gravity and ball direction |
 
 ## Build and test
 
@@ -33,6 +40,15 @@ node build.mjs
 node test/core.test.mjs
 python3 test/browser_test.py   # needs Playwright with Chromium
 ```
+
+## How AR mode works
+
+1. The camera frame is searched for the cube's markers (2×2 per face). One pose is solved from every visible marker and smoothed.
+2. "Down" comes from the phone's tilt sensor and is turned into the cube's own coordinates, so tilting the real cube tilts the maze. Without a tilt sensor the game assumes the phone is held upright.
+3. The game cube is drawn with the camera's own projection, slightly larger than the real cube so its edges stay hidden.
+4. A level starts when the face with the ball is level. When the cube leaves the camera view, the game waits.
+
+Field of view: the camera is assumed to see 66° along the long side of the image. If the game cube sits a little off the real cube on some phone, open the page with `?fov=60` (or another value); `?debug` shows tracking speed and status.
 
 ## Writing levels
 
