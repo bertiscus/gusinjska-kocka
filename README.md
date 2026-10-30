@@ -65,6 +65,8 @@ Levels live in `LEVELS` in `src/core.js`. Each face is 9 rows of 9 characters. F
 | `.` | Grass |
 | `T` | Pine tree |
 | `~` | Water: the ball goes back to the last visited door |
+
+A level can set `pondEdge` (in tiles, e.g. `0.22` on level 2) so the ball must roll that far into a pool before it falls in; grazing the edge is forgiven.
 | `@` | Start (one per level) |
 | Capital letter | Building footprint, a filled rectangle (letters in the table below) |
 | Same letter, small | That building's door, touching its footprint |

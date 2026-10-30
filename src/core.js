@@ -121,15 +121,16 @@ export const LEVELS = [
   },
   {
     key: 'izvori', name: { me: 'Izvori', sq: 'Burimet', en: 'The Springs' },
+    pondEdge: 0.22,   // forgiving pools: the ball must roll this far (in tiles) into the water to fall in
     faces: {
       top: [
         '#########',
-        '#@..~~..#',
-        '#.#.~~.T#',
+        '#@......#',
+        '#.#....T#',
         '#.#.....#',
         '#...SS...',
-        '#~~.SS.T#',
-        '#~~..s..#',
+        '#~..SS.T#',
+        '#....s..#',
         '#T.....~#',
         '#########',
       ],
@@ -147,10 +148,10 @@ export const LEVELS = [
       front: [
         '#########',
         '#.......#',
-        '#.OOO.~~#',
-        '#.OOO.~~#',
+        '#.OOO..~#',
+        '#.OOO...#',
         '#..o....#',
-        '#~~~.##.#',
+        '#~..##..#',
         '#.......#',
         '#T.......',
         '#########',
@@ -543,6 +544,19 @@ export class Game {
     this.time = 0; this.sinkT = 0; this.splashes = 0;
   }
   begin() { if (this.phase === 'ready') this.phase = 'play'; }
+  // True once the ball is far enough into a water tile. Levels can set `pondEdge` (in tiles) so that
+  // grazing the edge of a pool is forgiven; sides that border more water don't count as an edge.
+  inPond(f, i, j, u, v) {
+    const m = this.level.def.pondEdge || 0;
+    if (!m) return true;
+    const lu = u + H - i, lv = H - v - j;          // 0..1 across the tile (u to the right, v down the map)
+    const water = (di, dj) => this.level.ufChar(f, i + di, j + dj) === '~';
+    if (lu < m && !water(-1, 0)) return false;
+    if (lu > 1 - m && !water(1, 0)) return false;
+    if (lv < m && !water(0, -1)) return false;
+    if (lv > 1 - m && !water(0, 1)) return false;
+    return true;
+  }
   get total() { return this.level.buildings.length; }
   update(dt, g) {
     const ev = [];
@@ -554,7 +568,7 @@ export class Game {
         const b = this.ball, i = tileI(b.u), j = tileJ(b.v);
         if (i < 0 || j < 0 || i >= N || j >= N) continue;
         const c = this.level.at(b.f, i, j);
-        if (c === '~') { this.phase = 'sink'; this.sinkT = 0; this.splashes++; ev.push({ type: 'sink' }); }
+        if (c === '~' && this.inPond(b.f, i, j, b.u, b.v)) { this.phase = 'sink'; this.sinkT = 0; this.splashes++; ev.push({ type: 'sink' }); }
         else if (isDoorChar(c)) {
           const bld = this.level.doorAt(b.f, i, j);
           if (bld && !this.visited.has(bld.letter)) {
